@@ -1,0 +1,57 @@
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+*.swp
+*.log
+
+# Dart / Flutter
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+**/.dart_tool/
+**/build/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/Flutter/ephemeral/
+
+# Native build outputs
+*.exe
+*.dill
+*.so
+*.dylib
+*.dll
+*.a
+*.app
+*.ipa
+*.apk
+*.aab
+
+# Release artifacts
+dist/
+release/
+*.zip
+*.tar.gz
+*.deb
+*.pkg
+*.msi
+SHA256SUMS
+
+# Python legacy/cache
+__pycache__/
+*.pyc
+
+# Local debug captures
+agentbeacon-*.png
+zc-agentbeacon-*.png
+.tmp-*.png
+
+# Local secrets/config
+.env
+.env.*
+*.local

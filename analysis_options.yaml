@@ -1,0 +1,12 @@
+include: package:lints/recommended.yaml
+
+analyzer:
+  exclude:
+    - legacy/**
+    - build/**
+    - '**/.dart_tool/**'
+
+linter:
+  rules:
+    prefer_single_quotes: true
+    sort_pub_dependencies: false

@@ -1,0 +1,15 @@
+name: zc_agentbeacon_workspace
+description: Workspace for ZcAgentBeacon.
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
+
+workspace:
+  - packages/zc_agentbeacon_core
+  - apps/companion
+  - apps/server
+  - apps/dashboard
+
+dev_dependencies:
+  lints: ^5.0.0

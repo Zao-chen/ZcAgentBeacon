@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve workspace
+        run: dart pub get
+      - name: Format check
+        run: dart format --output=none --set-exit-if-changed packages apps
+      - name: Analyze
+        run: dart analyze
+      - name: Core tests
+        working-directory: packages/zc_agentbeacon_core
+        run: dart test
+      - name: Dashboard tests
+        working-directory: apps/dashboard
+        run: flutter test
+      - name: Ensure legacy Python is not in release inputs
+        run: |
+          test -d legacy
+          ! find apps packages installers -name '*.py' | grep .

@@ -1,0 +1,162 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: dart pub get
+      - run: New-Item -ItemType Directory -Force -Path dist/windows | Out-Null
+        shell: pwsh
+      - name: Build CLIs
+        shell: pwsh
+        run: |
+          dart compile exe apps/companion/bin/zc_agentbeacon_companion.dart -o dist/windows/zc-agentbeacon-companion.exe
+          dart compile exe apps/server/bin/zc_agentbeacon_server.dart -o dist/windows/zc-agentbeacon-server.exe
+          Copy-Item installers/windows/* dist/windows/
+          Compress-Archive -Path dist/windows/* -DestinationPath dist/ZcAgentBeacon-windows-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/ZcAgentBeacon-windows-x64.zip
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: dart pub get
+      - name: Build CLIs
+        run: |
+          mkdir -p dist/macos
+          dart compile exe apps/companion/bin/zc_agentbeacon_companion.dart -o dist/macos/zc-agentbeacon-companion
+          dart compile exe apps/server/bin/zc_agentbeacon_server.dart -o dist/macos/zc-agentbeacon-server
+          cp installers/macos/* dist/macos/
+          chmod +x dist/macos/*
+          tar -czf dist/ZcAgentBeacon-macos-universal.tar.gz -C dist/macos .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/ZcAgentBeacon-macos-universal.tar.gz
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: dart pub get
+      - name: Build Linux packages
+        run: |
+          set -eux
+          mkdir -p dist/linux
+          (cd apps/dashboard && flutter build web --release)
+          dart compile exe apps/companion/bin/zc_agentbeacon_companion.dart -o dist/linux/zc-agentbeacon-companion
+          dart compile exe apps/server/bin/zc_agentbeacon_server.dart -o dist/linux/zc-agentbeacon-server
+          cp installers/linux/* dist/linux/
+          chmod +x dist/linux/*
+          tar -czf dist/ZcAgentBeacon-linux-x64.tar.gz -C dist/linux .
+
+          mkdir -p deb/DEBIAN deb/usr/bin deb/usr/share/zc-agentbeacon/dashboard
+          cp dist/linux/zc-agentbeacon-companion deb/usr/bin/
+          cp dist/linux/zc-agentbeacon-server deb/usr/bin/
+          cp -R apps/dashboard/build/web/. deb/usr/share/zc-agentbeacon/dashboard/
+          cat > deb/DEBIAN/control <<EOF
+          Package: zc-agentbeacon
+          Version: ${GITHUB_REF_NAME#v}
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Maintainer: ZcAgentBeacon
+          Description: LAN dashboard for Codex conversation status
+          EOF
+          dpkg-deb --build deb dist/ZcAgentBeacon-linux-x64.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            dist/ZcAgentBeacon-linux-x64.tar.gz
+            dist/ZcAgentBeacon-linux-x64.deb
+
+  raspberry-pi:
+    runs-on: ubuntu-24.04-arm
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: dart pub get
+      - name: Build Raspberry Pi arm64 package
+        run: |
+          set -eux
+          mkdir -p dist/pi/dashboard
+          (cd apps/dashboard && flutter build web --release)
+          dart compile exe apps/server/bin/zc_agentbeacon_server.dart -o dist/pi/zc-agentbeacon-server
+          cp -R apps/dashboard/build/web/. dist/pi/dashboard/
+          cp installers/raspberry-pi/* dist/pi/
+          chmod +x dist/pi/*
+          tar -czf dist/ZcAgentBeacon-RaspberryPi-arm64.tar.gz -C dist/pi .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: raspberry-pi
+          path: dist/ZcAgentBeacon-RaspberryPi-arm64.tar.gz
+
+  raspberry-pi-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: dart pub get
+      - name: Build source fallback package
+        run: |
+          set -eux
+          mkdir -p dist/pi-source/dashboard
+          (cd apps/dashboard && flutter build web --release)
+          cp -R apps packages installers/raspberry-pi scripts pubspec.yaml analysis_options.yaml dist/pi-source/
+          cp -R apps/dashboard/build/web/. dist/pi-source/dashboard/
+          tar -czf dist/ZcAgentBeacon-RaspberryPi-source.tar.gz -C dist/pi-source .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: raspberry-pi-source
+          path: dist/ZcAgentBeacon-RaspberryPi-source.tar.gz
+
+  publish:
+    needs: [windows, macos, linux, raspberry-pi, raspberry-pi-source]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+      - name: Checksums
+        run: |
+          cd release
+          sha256sum * > SHA256SUMS
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: release/*
+          generate_release_notes: true

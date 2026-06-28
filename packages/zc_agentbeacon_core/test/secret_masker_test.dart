@@ -12,10 +12,9 @@ void main() {
   });
 
   test('truncates after masking', () {
-    expect(SecretMasker(maxLength: 12).mask('a' * 40), hasLength(15));
+    expect(
+      SecretMasker(maxLength: 12).mask(List.filled(40, 'a').join()),
+      hasLength(15),
+    );
   });
-}
-
-extension on String {
-  String operator *(int times) => List.filled(times, this).join();
 }

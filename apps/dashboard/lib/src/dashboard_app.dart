@@ -331,7 +331,7 @@ class ConversationRow extends StatelessWidget {
       duration: const Duration(milliseconds: 1200),
       builder: (context, flash, child) {
         return Container(
-          minHeight: 70,
+          constraints: const BoxConstraints(minHeight: 70),
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: Color.lerp(
@@ -345,7 +345,7 @@ class ConversationRow extends StatelessWidget {
               if (conversation.status == ConversationStatus.thinking ||
                   conversation.status == ConversationStatus.working)
                 BoxShadow(
-                  color: info.color.withOpacity(.16),
+                  color: info.color.withValues(alpha: .16),
                   blurRadius: 4,
                   spreadRadius: 1,
                 ),

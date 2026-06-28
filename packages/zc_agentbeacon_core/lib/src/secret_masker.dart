@@ -5,14 +5,16 @@ class SecretMasker {
 
   static final List<RegExp> _patterns = [
     RegExp(
-      r'''(?i)(?:\$env:|env:)?[A-Z0-9_]*(?:PASS|PASSWORD|TOKEN|SECRET|API[_-]?KEY|ACCESS[_-]?KEY)[A-Z0-9_]*\s*=\s*["']?[^"'\s,;]+''',
+      r'''(?:\$env:|env:)?[A-Z0-9_]*(?:PASS|PASSWORD|TOKEN|SECRET|API[_-]?KEY|ACCESS[_-]?KEY)[A-Z0-9_]*\s*=\s*["']?[^"'\s,;]+''',
+      caseSensitive: false,
     ),
     RegExp(
-      r'''(?i)(api[_-]?key|token|secret|password|passwd|authorization|bearer)\s*[:=]\s*["']?[^"'\s,;]+''',
+      r'''(api[_-]?key|token|secret|password|passwd|authorization|bearer)\s*[:=]\s*["']?[^"'\s,;]+''',
+      caseSensitive: false,
     ),
-    RegExp(r'(?i)bearer\s+[a-z0-9._\-]{16,}'),
-    RegExp(r'sk-[a-zA-Z0-9_\-]{16,}'),
-    RegExp(r'tp-[a-zA-Z0-9_\-]{16,}'),
+    RegExp(r'bearer\s+[a-z0-9._-]{16,}', caseSensitive: false),
+    RegExp(r'sk-[a-zA-Z0-9_-]{16,}'),
+    RegExp(r'tp-[a-zA-Z0-9_-]{16,}'),
     RegExp(r'gh[pousr]_[a-zA-Z0-9_]{20,}'),
     RegExp(r'AKIA[0-9A-Z]{16}'),
   ];

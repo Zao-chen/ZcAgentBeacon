@@ -5,6 +5,15 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, for example v0.1.0'
+        required: true
+        type: string
+      title:
+        description: 'Release title. Leave empty to use the tag.'
+        required: false
+        type: string
 
 jobs:
   windows:
@@ -62,6 +71,8 @@ jobs:
           cache: true
       - run: dart pub get
       - name: Build Linux packages
+        env:
+          RELEASE_INPUT_TAG: ${{ inputs.tag }}
         run: |
           set -eux
           mkdir -p dist/linux
@@ -76,9 +87,15 @@ jobs:
           cp dist/linux/zc-agentbeacon-companion deb/usr/bin/
           cp dist/linux/zc-agentbeacon-server deb/usr/bin/
           cp -R apps/dashboard/build/web/. deb/usr/share/zc-agentbeacon/dashboard/
-          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            PACKAGE_VERSION="${RELEASE_INPUT_TAG}"
+            PACKAGE_VERSION="${PACKAGE_VERSION#v}"
+          elif [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
             PACKAGE_VERSION="${GITHUB_REF_NAME#v}"
           else
+            PACKAGE_VERSION="0.0.0+${GITHUB_RUN_NUMBER:-0}"
+          fi
+          if ! echo "$PACKAGE_VERSION" | grep -Eq '^[0-9]'; then
             PACKAGE_VERSION="0.0.0+${GITHUB_RUN_NUMBER:-0}"
           fi
           cat > deb/DEBIAN/control <<EOF
@@ -122,7 +139,6 @@ jobs:
 
   publish:
     needs: [windows, macos, linux, raspberry-pi]
-    if: always()
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -135,8 +151,28 @@ jobs:
         run: |
           cd release
           sha256sum * > SHA256SUMS
+      - name: Release metadata
+        id: meta
+        env:
+          RELEASE_INPUT_TAG: ${{ inputs.tag }}
+          RELEASE_INPUT_TITLE: ${{ inputs.title }}
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            tag="${RELEASE_INPUT_TAG}"
+            title="${RELEASE_INPUT_TITLE}"
+          else
+            tag="${GITHUB_REF_NAME}"
+            title="${GITHUB_REF_NAME}"
+          fi
+          if [ -z "$title" ]; then
+            title="$tag"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "title=$title" >> "$GITHUB_OUTPUT"
       - uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.title }}
+          target_commitish: ${{ github.sha }}
           files: release/*
           generate_release_notes: true

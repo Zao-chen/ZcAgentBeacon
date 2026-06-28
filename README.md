@@ -2,9 +2,9 @@
 
 [English](README_EN.md)
 
-🌟 一个运行在局域网内的 **Codex 会话状态仪表盘**。🌟
+🌟 一个运行在局域网内的 **Codex / Claude Code 会话状态仪表盘**。🌟
 
-它可以自动发现多台设备上的 Codex companion，实时展示正在思考、运行工具、完成或中断的对话状态。仪表盘可以运行在任意局域网设备上，也适合放在桌面小屏、房间状态面板、常驻浏览器页面上使用。
+它可以自动发现多台设备上的 companion，实时展示正在思考、运行工具、完成或中断的对话状态。仪表盘可以运行在任意局域网设备上，也适合放在桌面小屏、房间状态面板、常驻浏览器页面上使用。
 
 [![GitHub Release](https://img.shields.io/github/v/release/Zao-chen/ZcAgentBeacon?color=22c55e&style=for-the-badge)](https://github.com/Zao-chen/ZcAgentBeacon/releases)
 [![GitHub Downloads](https://img.shields.io/github/downloads/Zao-chen/ZcAgentBeacon/total?color=6366f1&style=for-the-badge)](https://github.com/Zao-chen/ZcAgentBeacon/releases)
@@ -15,7 +15,7 @@
 
 ZcAgentBeacon 由三部分组成：
 
-- **Companion：** 安装在运行 Codex 的 Windows / macOS / Linux 设备上，读取本机 `.codex` 状态并输出 raw signals。
+- **Companion：** 安装在运行 Codex 或 Claude Code 的 Windows / macOS / Linux 设备上，读取本机 `.codex` / `.claude` 状态并输出 raw signals。
 - **Hub：** 运行在承载仪表盘的设备上，自动发现设备、聚合状态、判断会话阶段。
 - **Dashboard：** 由 Hub 提供的 Flutter Web 仪表盘，展示局域网内所有设备的 Codex 状态。
 
@@ -30,9 +30,9 @@ ZcAgentBeacon 由三部分组成：
 
 ## 🚀 快速入门
 
-### Step1: 在 Codex 设备安装 Companion
+### Step1: 在 Agent 设备安装 Companion
 
-在 [Release](https://github.com/Zao-chen/ZcAgentBeacon/releases) 下载对应 Codex 设备平台的 Companion 安装包。
+在 [Release](https://github.com/Zao-chen/ZcAgentBeacon/releases) 下载对应设备平台的 Companion 安装包。
 
 Windows：
 

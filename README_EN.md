@@ -2,9 +2,9 @@
 
 [中文](README.md)
 
-🌟 A **Codex conversation status dashboard** for your local network. 🌟
+🌟 A **Codex / Claude Code conversation status dashboard** for your local network. 🌟
 
-ZcAgentBeacon discovers Codex companion agents across your LAN and shows whether each conversation is thinking, running tools, completed, interrupted, stale, or offline. The dashboard can run on any device in the same network, and it is especially useful for a desk display, room status panel, Raspberry Pi kiosk, or always-on browser page.
+ZcAgentBeacon discovers companion agents across your LAN and shows whether each conversation is thinking, running tools, completed, interrupted, stale, or offline. The dashboard can run on any device in the same network, and it is especially useful for a desk display, room status panel, Raspberry Pi kiosk, or always-on browser page.
 
 [![GitHub Release](https://img.shields.io/github/v/release/Zao-chen/ZcAgentBeacon?color=22c55e&style=for-the-badge)](https://github.com/Zao-chen/ZcAgentBeacon/releases)
 [![GitHub Downloads](https://img.shields.io/github/downloads/Zao-chen/ZcAgentBeacon/total?color=6366f1&style=for-the-badge)](https://github.com/Zao-chen/ZcAgentBeacon/releases)
@@ -15,7 +15,7 @@ ZcAgentBeacon discovers Codex companion agents across your LAN and shows whether
 
 ZcAgentBeacon has three main parts:
 
-- **Companion:** Runs on each Windows / macOS / Linux device that uses Codex. It reads local `.codex` data and exposes raw signals.
+- **Companion:** Runs on each Windows / macOS / Linux device that uses Codex or Claude Code. It reads local `.codex` / `.claude` data and exposes raw signals.
 - **Hub:** Runs on the dashboard host. It discovers devices, aggregates signals, and infers conversation status.
 - **Dashboard:** A Flutter Web interface served by the Hub that lists Codex conversation activity from every discovered device.
 
@@ -30,9 +30,9 @@ ZcAgentBeacon has three main parts:
 
 ## 🚀 Quick Start
 
-### Step 1: Install Companion On Codex Devices
+### Step 1: Install Companion On Agent Devices
 
-Download the Companion package for each Codex device from [Releases](https://github.com/Zao-chen/ZcAgentBeacon/releases).
+Download the Companion package for each agent device from [Releases](https://github.com/Zao-chen/ZcAgentBeacon/releases).
 
 Windows:
 
@@ -91,7 +91,7 @@ cd apps/dashboard && flutter test && flutter build web --release
 ## 📁 Repository Layout
 
 ```text
-packages/zc_agentbeacon_core   shared models, Codex adapter, status engine
+packages/zc_agentbeacon_core   shared models, agent adapters, status engine
 apps/companion                 local raw-signal companion
 apps/server                    Hub implementation
 apps/dashboard                 Flutter Web dashboard

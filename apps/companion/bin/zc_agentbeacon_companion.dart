@@ -41,14 +41,14 @@ class CompanionServer {
     required this.port,
     this.allowedServer,
     this.token,
-    CodexAdapter? adapter,
-  }) : adapter = adapter ?? CodexAdapter();
+    LocalAgentAdapter? adapter,
+  }) : adapter = adapter ?? LocalAgentAdapter();
 
   final String host;
   final int port;
   final String? allowedServer;
   final String? token;
-  final CodexAdapter adapter;
+  final LocalAgentAdapter adapter;
 
   HttpServer? _httpServer;
   RawDatagramSocket? _beaconSocket;

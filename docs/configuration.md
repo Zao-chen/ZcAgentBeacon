@@ -9,9 +9,13 @@ All configuration is optional. Defaults are LAN-first and token-free.
 | `ZC_AGENTBEACON_COMPANION_HOST` | LAN IP | Bind address |
 | `ZC_AGENTBEACON_COMPANION_PORT` | `42180` | HTTP port |
 | `ZC_AGENTBEACON_CODEX_HOME` | `~/.codex` | Codex data directory |
+| `ZC_AGENTBEACON_CLAUDE_HOME` | `~/.claude` | Claude Code data directory |
+| `CLAUDE_CONFIG_DIR` | empty | Claude Code config directory; used when `ZC_AGENTBEACON_CLAUDE_HOME` is unset |
 | `ZC_AGENTBEACON_SQLITE3` | `sqlite3` | sqlite command |
 | `ZC_AGENTBEACON_ALLOWED_HUB` | empty | Comma-separated allowed Hub IPs |
 | `ZC_AGENTBEACON_TOKEN` | empty | Optional bearer/query token |
+
+The companion reads both Codex and Claude Code by default. Set the relevant home variable only when the app runs under a different system user or the agent stores data outside the default directory.
 
 ## Hub
 

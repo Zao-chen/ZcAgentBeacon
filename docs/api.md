@@ -10,7 +10,7 @@
 
 ### `GET /status`
 
-Returns raw Codex signals:
+Returns raw Codex and Claude Code signals:
 
 ```json
 {

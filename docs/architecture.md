@@ -2,11 +2,11 @@
 
 ZcAgentBeacon has three runtime parts:
 
-1. Companion runs on each Codex workstation.
+1. Companion runs on each Codex or Claude Code workstation.
 2. Hub runs on Raspberry Pi or a LAN host.
 3. Dashboard is Flutter Web served by the Hub.
 
-The companion reads local Codex state and returns raw signals. It does not decide whether a conversation is thinking, running a tool, completed, or interrupted. The Hub owns all state inference so behavior updates usually require only a Hub/dashboard upgrade.
+The companion reads local agent state and returns raw signals. It does not decide whether a conversation is thinking, running a tool, completed, or interrupted. The Hub owns all state inference so behavior updates usually require only a Hub/dashboard upgrade.
 
 ## Data Flow
 
@@ -14,6 +14,7 @@ The companion reads local Codex state and returns raw signals. It does not decid
 .codex/state_5.sqlite
 .codex/sessions/**/rollout-*.jsonl
 .codex/process_manager/chat_processes.json
+~/.claude/projects/<project>/<session-id>.jsonl
         |
         v
 companion /status rawConversations
@@ -37,3 +38,5 @@ The core package infers:
 - `error_offline`: device is offline or data cannot be polled.
 
 UUID/process-only auxiliary conversations are folded into a real conversation in the same cwd, and do not trigger completion notifications.
+
+Claude Code support is implemented as a read-only transcript adapter. Claude's official docs describe `~/.claude/projects/<project>/<session-id>.jsonl` as an internal format, so format changes should be handled inside `zc_agentbeacon_core` without changing the companion or Hub API.

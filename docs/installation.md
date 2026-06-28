@@ -14,7 +14,7 @@ GitHub Actions publishes role-based packages:
 
 ## Companion
 
-Install Companion on every Codex workstation.
+Install Companion on every Codex or Claude Code workstation.
 
 Windows:
 

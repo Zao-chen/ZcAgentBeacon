@@ -11,10 +11,12 @@ const discoveryPort = 42179;
 const defaultPort = 42180;
 
 Future<void> main(List<String> args) async {
-  final port = intArg(args, '--port') ??
+  final port =
+      intArg(args, '--port') ??
       int.tryParse(env('ZC_AGENTBEACON_COMPANION_PORT') ?? '') ??
       defaultPort;
-  final host = stringArg(args, '--host') ??
+  final host =
+      stringArg(args, '--host') ??
       env('ZC_AGENTBEACON_COMPANION_HOST') ??
       await defaultLanHost();
   final allowedServer =
@@ -28,7 +30,9 @@ Future<void> main(List<String> args) async {
     token: token,
   );
   await server.start();
-  stdout.writeln('$productName Companion listening on http://$host:$port/status');
+  stdout.writeln(
+    '$productName Companion listening on http://$host:$port/status',
+  );
 }
 
 class CompanionServer {
@@ -51,7 +55,9 @@ class CompanionServer {
   Timer? _beaconTimer;
 
   Future<void> start() async {
-    final bind = host == '0.0.0.0' ? InternetAddress.anyIPv4 : InternetAddress(host);
+    final bind = host == '0.0.0.0'
+        ? InternetAddress.anyIPv4
+        : InternetAddress(host);
     _httpServer = await HttpServer.bind(bind, port);
     _httpServer!.listen(handleRequest);
     await startBeaconing();
@@ -114,7 +120,10 @@ class CompanionServer {
   Future<void> startBeaconing() async {
     _beaconSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
     sendBeacon();
-    _beaconTimer = Timer.periodic(const Duration(seconds: 5), (_) => sendBeacon());
+    _beaconTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => sendBeacon(),
+    );
   }
 
   void sendBeacon() {
@@ -130,7 +139,11 @@ class CompanionServer {
       'port': port,
       'sentAt': DateTime.now().toUtc().toIso8601String(),
     });
-    socket.send(utf8.encode(payload), InternetAddress(discoveryAddress), discoveryPort);
+    socket.send(
+      utf8.encode(payload),
+      InternetAddress(discoveryAddress),
+      discoveryPort,
+    );
   }
 }
 
@@ -150,7 +163,10 @@ Future<void> jsonResponse(
 void setCors(HttpResponse response) {
   response.headers.set('Access-Control-Allow-Origin', '*');
   response.headers.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  response.headers.set(
+    'Access-Control-Allow-Headers',
+    'Content-Type,Authorization',
+  );
 }
 
 String? stringArg(List<String> args, String name) {

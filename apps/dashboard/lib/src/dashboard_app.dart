@@ -31,7 +31,9 @@ ThemeData _theme(Brightness brightness) {
       seedColor: const Color(0xff087f8c),
       brightness: brightness,
     ),
-    scaffoldBackgroundColor: dark ? const Color(0xff0f141b) : const Color(0xfff5f6f7),
+    scaffoldBackgroundColor: dark
+        ? const Color(0xff0f141b)
+        : const Color(0xfff5f6f7),
   );
 }
 
@@ -105,7 +107,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is Map) {
-        applySnapshot(DashboardSnapshot.fromJson(decoded.cast<String, Object?>()));
+        applySnapshot(
+          DashboardSnapshot.fromJson(decoded.cast<String, Object?>()),
+        );
       }
     } on Object {
       return;
@@ -127,7 +131,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final key = conversationKey(conversation);
       present.add(key);
       final previous = knownStatuses[key];
-      final doneId = '$key:${conversation.completedAt ?? conversation.lastEventAt ?? conversation.seenAt}';
+      final doneId =
+          '$key:${conversation.completedAt ?? conversation.lastEventAt ?? conversation.seenAt}';
       if (loaded &&
           !conversation.suppressCompletion &&
           previous != null &&
@@ -141,14 +146,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       knownStatuses[key] = conversation.status;
     }
     knownStatuses.removeWhere((key, _) => !present.contains(key));
-    justCompleted.removeWhere((_, value) => now.difference(value).inSeconds > 9);
+    justCompleted.removeWhere(
+      (_, value) => now.difference(value).inSeconds > 9,
+    );
   }
 
   void showCompletion(ConversationView conversation) {
     final messenger = ScaffoldMessenger.maybeOf(context);
     messenger?.showSnackBar(
       SnackBar(
-        content: Text('${conversation.deviceName ?? '未知设备'} · ${conversation.title} 已完成'),
+        content: Text(
+          '${conversation.deviceName ?? '未知设备'} · ${conversation.title} 已完成',
+        ),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 5),
       ),
@@ -157,9 +166,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final conversations = [...snapshot.conversations]..sort((a, b) {
-        final aTime = a.lastEventAt ?? a.seenAt ?? a.completedAt ?? DateTime(1970);
-        final bTime = b.lastEventAt ?? b.seenAt ?? b.completedAt ?? DateTime(1970);
+    final conversations = [...snapshot.conversations]
+      ..sort((a, b) {
+        final aTime =
+            a.lastEventAt ?? a.seenAt ?? a.completedAt ?? DateTime(1970);
+        final bTime =
+            b.lastEventAt ?? b.seenAt ?? b.completedAt ?? DateTime(1970);
         return bTime.compareTo(aTime);
       });
     final active = conversations.where((item) => item.status.isActive).length;
@@ -172,7 +184,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Header(active: active, devices: snapshot.devices.length),
               Expanded(
                 child: conversations.isEmpty
-                    ? EmptyState(deviceCount: snapshot.devices.length, loaded: loaded)
+                    ? EmptyState(
+                        deviceCount: snapshot.devices.length,
+                        loaded: loaded,
+                      )
                     : ListView.separated(
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         itemCount: conversations.length,
@@ -181,7 +196,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           final item = conversations[index];
                           return ConversationRow(
                             conversation: item,
-                            justCompleted: justCompleted.containsKey(conversationKey(item)),
+                            justCompleted: justCompleted.containsKey(
+                              conversationKey(item),
+                            ),
                           );
                         },
                       ),
@@ -270,13 +287,21 @@ class StatTile extends StatelessWidget {
                 Text(
                   '$value',
                   maxLines: 1,
-                  style: const TextStyle(fontSize: 17, height: 1, fontWeight: FontWeight.w900),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 11, height: 1.1, color: colors.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 1.1,
+                    color: colors.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -309,7 +334,11 @@ class ConversationRow extends StatelessWidget {
           minHeight: 70,
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Color.lerp(colors.surface, const Color(0xff2f7d32), flash * .12),
+            color: Color.lerp(
+              colors.surface,
+              const Color(0xff2f7d32),
+              flash * .12,
+            ),
             border: Border.all(color: colors.outlineVariant),
             borderRadius: BorderRadius.circular(8),
             boxShadow: [
@@ -338,14 +367,22 @@ class ConversationRow extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        DeviceChip(name: conversation.deviceName ?? conversation.deviceHost ?? '未知设备'),
+                        DeviceChip(
+                          name:
+                              conversation.deviceName ??
+                              conversation.deviceHost ??
+                              '未知设备',
+                        ),
                         const SizedBox(width: 7),
                         Expanded(
                           child: Text(
                             conversation.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
                       ],
@@ -355,7 +392,10 @@ class ConversationRow extends StatelessWidget {
                       detail(conversation),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colors.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -364,11 +404,19 @@ class ConversationRow extends StatelessWidget {
               SizedBox(
                 width: 44,
                 child: Text(
-                  relative(conversation.lastEventAt ?? conversation.seenAt ?? conversation.completedAt),
+                  relative(
+                    conversation.lastEventAt ??
+                        conversation.seenAt ??
+                        conversation.completedAt,
+                  ),
                   textAlign: TextAlign.right,
                   maxLines: 1,
                   overflow: TextOverflow.clip,
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: colors.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: colors.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],
@@ -403,7 +451,11 @@ class StatusBadge extends StatelessWidget {
               info.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: info.color, fontWeight: FontWeight.w900, fontSize: 13),
+              style: TextStyle(
+                color: info.color,
+                fontWeight: FontWeight.w900,
+                fontSize: 13,
+              ),
             ),
           ),
         ],
@@ -422,14 +474,17 @@ class MotionDot extends StatefulWidget {
   State<MotionDot> createState() => _MotionDotState();
 }
 
-class _MotionDotState extends State<MotionDot> with SingleTickerProviderStateMixin {
+class _MotionDotState extends State<MotionDot>
+    with SingleTickerProviderStateMixin {
   late final AnimationController controller;
 
   @override
   void initState() {
     super.initState();
-    controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))
-      ..repeat();
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat();
   }
 
   @override
@@ -453,7 +508,8 @@ class _MotionDotState extends State<MotionDot> with SingleTickerProviderStateMix
         ),
       );
     }
-    final active = widget.status == ConversationStatus.thinking ||
+    final active =
+        widget.status == ConversationStatus.thinking ||
         widget.status == ConversationStatus.working;
     return ScaleTransition(
       scale: active
@@ -489,14 +545,22 @@ class DeviceChip extends StatelessWidget {
         name,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: colors.onSurfaceVariant),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: colors.onSurfaceVariant,
+        ),
       ),
     );
   }
 }
 
 class EmptyState extends StatelessWidget {
-  const EmptyState({required this.deviceCount, required this.loaded, super.key});
+  const EmptyState({
+    required this.deviceCount,
+    required this.loaded,
+    super.key,
+  });
 
   final int deviceCount;
   final bool loaded;
@@ -508,14 +572,21 @@ class EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(loaded ? Icons.check_circle_outline : Icons.sync, size: 42, color: colors.primary),
+          Icon(
+            loaded ? Icons.check_circle_outline : Icons.sync,
+            size: 42,
+            color: colors.primary,
+          ),
           const SizedBox(height: 12),
           Text(
             loaded ? '暂无会话记录' : '正在连接',
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
-          Text('$deviceCount 台设备已连接', style: TextStyle(color: colors.onSurfaceVariant)),
+          Text(
+            '$deviceCount 台设备已连接',
+            style: TextStyle(color: colors.onSurfaceVariant),
+          ),
         ],
       ),
     );
@@ -560,17 +631,26 @@ StatusInfo statusInfo(ConversationStatus status) {
     ConversationStatus.toolRunning => const StatusInfo('工具', Color(0xffb15f00)),
     ConversationStatus.thinking => const StatusInfo('思考', Color(0xff087f8c)),
     ConversationStatus.working => const StatusInfo('运行', Color(0xff087f8c)),
-    ConversationStatus.waitingForUser => const StatusInfo('等待', Color(0xff3366cc)),
+    ConversationStatus.waitingForUser => const StatusInfo(
+      '等待',
+      Color(0xff3366cc),
+    ),
     ConversationStatus.interrupted => const StatusInfo('中断', Color(0xffb3261e)),
     ConversationStatus.stale => const StatusInfo('过期', Color(0xffb15f00)),
-    ConversationStatus.errorOffline => const StatusInfo('离线', Color(0xffb3261e)),
+    ConversationStatus.errorOffline => const StatusInfo(
+      '离线',
+      Color(0xffb3261e),
+    ),
     ConversationStatus.idle => const StatusInfo('完成', Color(0xff66717d)),
   };
 }
 
 String conversationKey(ConversationView conversation) {
   return [
-    conversation.deviceId ?? conversation.deviceHost ?? conversation.deviceName ?? 'device',
+    conversation.deviceId ??
+        conversation.deviceHost ??
+        conversation.deviceName ??
+        'device',
     conversation.conversationId,
   ].join(':');
 }
@@ -593,11 +673,17 @@ String detail(ConversationView c) {
     parts.add(base);
   }
   final text = parts.join(' / ');
-  return text.length > 220 ? '${text.substring(0, 220)}...' : (text.isEmpty ? '暂无详情' : text);
+  return text.length > 220
+      ? '${text.substring(0, 220)}...'
+      : (text.isEmpty ? '暂无详情' : text);
 }
 
 String basename(String path) {
-  final parts = path.replaceAll('\\', '/').split('/').where((item) => item.isNotEmpty).toList();
+  final parts = path
+      .replaceAll('\\', '/')
+      .split('/')
+      .where((item) => item.isNotEmpty)
+      .toList();
   return parts.isEmpty ? '' : parts.last;
 }
 

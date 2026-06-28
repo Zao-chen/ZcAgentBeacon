@@ -50,22 +50,25 @@ class CodexAdapter {
     int? tailLines,
     int? maxThreads,
     int? rawEventLimit,
-  })  : _masker = masker ?? SecretMasker(),
-        _sqliteCommand = sqliteCommand ??
-            env('ZC_AGENTBEACON_SQLITE3') ??
-            'sqlite3',
-        _tailBytes = tailBytes ??
-            int.tryParse(env('ZC_AGENTBEACON_TAIL_BYTES') ?? '') ??
-            384 * 1024,
-        _tailLines = tailLines ??
-            int.tryParse(env('ZC_AGENTBEACON_TAIL_LINES') ?? '') ??
-            2500,
-        _maxThreads = maxThreads ??
-            int.tryParse(env('ZC_AGENTBEACON_MAX_THREADS') ?? '') ??
-            10,
-        _rawEventLimit = rawEventLimit ??
-            int.tryParse(env('ZC_AGENTBEACON_RAW_EVENT_LIMIT') ?? '') ??
-            360;
+  }) : _masker = masker ?? SecretMasker(),
+       _sqliteCommand =
+           sqliteCommand ?? env('ZC_AGENTBEACON_SQLITE3') ?? 'sqlite3',
+       _tailBytes =
+           tailBytes ??
+           int.tryParse(env('ZC_AGENTBEACON_TAIL_BYTES') ?? '') ??
+           384 * 1024,
+       _tailLines =
+           tailLines ??
+           int.tryParse(env('ZC_AGENTBEACON_TAIL_LINES') ?? '') ??
+           2500,
+       _maxThreads =
+           maxThreads ??
+           int.tryParse(env('ZC_AGENTBEACON_MAX_THREADS') ?? '') ??
+           10,
+       _rawEventLimit =
+           rawEventLimit ??
+           int.tryParse(env('ZC_AGENTBEACON_RAW_EVENT_LIMIT') ?? '') ??
+           360;
 
   static const _processFreshness = Duration(seconds: 45);
   static const _activeEventFreshness = Duration(minutes: 10);
@@ -114,7 +117,10 @@ class CodexAdapter {
         cwd: thread.cwd,
         updatedAt: thread.updatedAtMs == 0
             ? null
-            : DateTime.fromMillisecondsSinceEpoch(thread.updatedAtMs, isUtc: true),
+            : DateTime.fromMillisecondsSinceEpoch(
+                thread.updatedAtMs,
+                isUtc: true,
+              ),
         events: parseRawSessionLines(lines),
         processes: const [],
       );
@@ -123,7 +129,8 @@ class CodexAdapter {
     for (final process in processes) {
       final thread = threadById[process.conversationId];
       final existing = raw[process.conversationId];
-      final conversation = existing ??
+      final conversation =
+          existing ??
           RawConversation(
             conversationId: process.conversationId,
             title: process.chatTitle ?? thread?.title ?? process.conversationId,
@@ -317,10 +324,12 @@ where archived = 0
 order by coalesce(recency_at_ms, updated_at_ms, updated_at * 1000) desc;
 ''';
     try {
-      final result = await Process.run(
-        _sqliteCommand,
-        ['-separator', '\t', database.path, query],
-      );
+      final result = await Process.run(_sqliteCommand, [
+        '-separator',
+        '\t',
+        database.path,
+        query,
+      ]);
       if (result.exitCode != 0) {
         errors.add('sqlite3 read failed: ${result.stderr}'.trim());
         return const [];
@@ -356,7 +365,9 @@ order by coalesce(recency_at_ms, updated_at_ms, updated_at * 1000) desc;
     Directory home,
     List<String> errors,
   ) async {
-    final file = File(pathJoin(home.path, 'process_manager/chat_processes.json'));
+    final file = File(
+      pathJoin(home.path, 'process_manager/chat_processes.json'),
+    );
     if (!await file.exists()) {
       return const [];
     }
@@ -380,8 +391,11 @@ order by coalesce(recency_at_ms, updated_at_ms, updated_at * 1000) desc;
 
   ChatProcessRecord? chatProcessFromJson(Map<String, Object?> json) {
     final conversationId = json['conversationId']?.toString();
-    final updatedAtMs = integer(json['updatedAtMs']) ?? integer(json['startedAtMs']);
-    if (conversationId == null || conversationId.isEmpty || updatedAtMs == null) {
+    final updatedAtMs =
+        integer(json['updatedAtMs']) ?? integer(json['startedAtMs']);
+    if (conversationId == null ||
+        conversationId.isEmpty ||
+        updatedAtMs == null) {
       return null;
     }
     return ChatProcessRecord(
@@ -394,7 +408,10 @@ order by coalesce(recency_at_ms, updated_at_ms, updated_at * 1000) desc;
     );
   }
 
-  Future<File?> resolveSessionFile(Directory home, CodexThreadRecord thread) async {
+  Future<File?> resolveSessionFile(
+    Directory home,
+    CodexThreadRecord thread,
+  ) async {
     if (thread.rolloutPath.isNotEmpty) {
       final direct = File(thread.rolloutPath);
       if (await direct.exists()) {
@@ -409,7 +426,10 @@ order by coalesce(recency_at_ms, updated_at_ms, updated_at * 1000) desc;
     if (!await sessions.exists()) {
       return null;
     }
-    await for (final entity in sessions.list(recursive: true, followLinks: false)) {
+    await for (final entity in sessions.list(
+      recursive: true,
+      followLinks: false,
+    )) {
       if (entity is File &&
           entity.path.endsWith('.jsonl') &&
           entity.path.contains(thread.id)) {
@@ -444,7 +464,10 @@ Directory codexHome() {
   if (override != null) {
     return Directory(override);
   }
-  final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '.';
+  final home =
+      Platform.environment['HOME'] ??
+      Platform.environment['USERPROFILE'] ??
+      '.';
   return Directory(pathJoin(home, '.codex'));
 }
 
@@ -467,9 +490,10 @@ Future<int> countCodexProcesses() async {
   try {
     if (Platform.isWindows) {
       final result = await Process.run('tasklist', ['/FO', 'CSV', '/NH']);
-      return RegExp(r'"codex\.exe"', caseSensitive: false)
-          .allMatches(result.stdout.toString())
-          .length;
+      return RegExp(
+        r'"codex\.exe"',
+        caseSensitive: false,
+      ).allMatches(result.stdout.toString()).length;
     }
     final result = await Process.run('ps', ['-axo', 'comm=']);
     return result.stdout
@@ -504,7 +528,8 @@ String? eventTurnId(Map<String, Object?> data, Map<String, Object?> payload) {
     data['internal_chat_message_metadata_passthrough'] ??
         payload['internal_chat_message_metadata_passthrough'],
   );
-  return (data['turn_id'] ?? payload['turn_id'] ?? metadata['turn_id'])?.toString();
+  return (data['turn_id'] ?? payload['turn_id'] ?? metadata['turn_id'])
+      ?.toString();
 }
 
 bool isAbortEvent(String? eventType) {
@@ -582,7 +607,9 @@ bool isAssistantMessage(Map<String, Object?> data) {
   }
   final content = data['content'];
   if (content is List) {
-    return content.whereType<Map>().any((item) => item['type'] == 'output_text');
+    return content.whereType<Map>().any(
+      (item) => item['type'] == 'output_text',
+    );
   }
   return content != null && contentText(content).isNotEmpty;
 }

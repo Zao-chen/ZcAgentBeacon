@@ -14,18 +14,23 @@ const defaultCompanionPort = 42180;
 
 Future<void> main(List<String> args) async {
   final server = ZcServer(
-    host: stringArg(args, '--host') ??
+    host:
+        stringArg(args, '--host') ??
         env('ZC_AGENTBEACON_SERVER_HOST') ??
         '0.0.0.0',
-    port: intArg(args, '--port') ??
+    port:
+        intArg(args, '--port') ??
         int.tryParse(env('ZC_AGENTBEACON_SERVER_PORT') ?? '') ??
         defaultServerPort,
-    webRoot: stringArg(args, '--web-root') ??
+    webRoot:
+        stringArg(args, '--web-root') ??
         env('ZC_AGENTBEACON_WEB_ROOT') ??
         'apps/dashboard/build/web',
   );
   await server.start();
-  stdout.writeln('$productName Server listening on http://${server.host}:${server.port}');
+  stdout.writeln(
+    '$productName Server listening on http://${server.host}:${server.port}',
+  );
 }
 
 class ZcServer {
@@ -62,7 +67,9 @@ class ZcServer {
   }
 
   Future<void> startHttp() async {
-    final bind = host == '0.0.0.0' ? InternetAddress.anyIPv4 : InternetAddress(host);
+    final bind = host == '0.0.0.0'
+        ? InternetAddress.anyIPv4
+        : InternetAddress(host);
     httpServer = await HttpServer.bind(bind, port);
     httpServer!.listen(handleRequest);
   }
@@ -134,11 +141,15 @@ class ZcServer {
             ? null
             : {'token': state.settings.token!},
       );
-      final request = await client.getUrl(uri).timeout(const Duration(seconds: 2));
+      final request = await client
+          .getUrl(uri)
+          .timeout(const Duration(seconds: 2));
       if (state.settings.token != null) {
         request.headers.set('Authorization', 'Bearer ${state.settings.token}');
       }
-      final response = await request.close().timeout(const Duration(seconds: 3));
+      final response = await request.close().timeout(
+        const Duration(seconds: 3),
+      );
       final body = await utf8.decoder.bind(response).join();
       if (response.statusCode != HttpStatus.ok) {
         throw HttpException('HTTP ${response.statusCode}: $body');
@@ -156,28 +167,48 @@ class ZcServer {
 
   Future<void> scanOnce() async {
     final hosts = await scanHosts();
-    await Future.wait(hosts.map((host) async {
-      final found = await probeCompanion(host);
-      if (found != null) {
-        state.addScannedDevice(found.host, found.port, found.hostname);
-      }
-    }));
+    await Future.wait(
+      hosts.map((host) async {
+        final found = await probeCompanion(host);
+        if (found != null) {
+          state.addScannedDevice(found.host, found.port, found.hostname);
+        }
+      }),
+    );
   }
 
   Future<ProbeResult?> probeCompanion(String host) async {
     try {
       final health = await client
-          .getUrl(Uri(scheme: 'http', host: host, port: defaultCompanionPort, path: '/health'))
+          .getUrl(
+            Uri(
+              scheme: 'http',
+              host: host,
+              port: defaultCompanionPort,
+              path: '/health',
+            ),
+          )
           .timeout(Duration(milliseconds: state.settings.scanTimeoutMs));
-      final healthResponse = await health.close().timeout(const Duration(seconds: 2));
+      final healthResponse = await health.close().timeout(
+        const Duration(seconds: 2),
+      );
       await healthResponse.drain();
       if (healthResponse.statusCode >= 400) {
         return null;
       }
       final request = await client
-          .getUrl(Uri(scheme: 'http', host: host, port: defaultCompanionPort, path: '/status'))
+          .getUrl(
+            Uri(
+              scheme: 'http',
+              host: host,
+              port: defaultCompanionPort,
+              path: '/status',
+            ),
+          )
           .timeout(const Duration(seconds: 2));
-      final response = await request.close().timeout(const Duration(seconds: 3));
+      final response = await request.close().timeout(
+        const Duration(seconds: 3),
+      );
       final decoded = jsonDecode(await utf8.decoder.bind(response).join());
       if (decoded is! Map || !decoded.containsKey('rawConversations')) {
         return null;
@@ -210,7 +241,8 @@ class ZcServer {
       await request.response.close();
       return;
     }
-    if (request.uri.path == '/ws' && WebSocketTransformer.isUpgradeRequest(request)) {
+    if (request.uri.path == '/ws' &&
+        WebSocketTransformer.isUpgradeRequest(request)) {
       final socket = await WebSocketTransformer.upgrade(request);
       sockets.add(socket);
       socket.add(state.snapshot().encode());
@@ -218,7 +250,11 @@ class ZcServer {
       return;
     }
     if (request.uri.path == '/health') {
-      await jsonResponse(request, {'ok': true, 'product': productName, 'version': serverVersion});
+      await jsonResponse(request, {
+        'ok': true,
+        'product': productName,
+        'version': serverVersion,
+      });
       return;
     }
     if (request.uri.path == '/api/conversations') {
@@ -227,7 +263,11 @@ class ZcServer {
     }
     if (request.uri.path == '/api/devices' && request.method == 'GET') {
       await jsonResponse(request, {
-        'devices': state.snapshot().devices.map((item) => item.toJson()).toList(),
+        'devices': state
+            .snapshot()
+            .devices
+            .map((item) => item.toJson())
+            .toList(),
       });
       return;
     }
@@ -241,7 +281,9 @@ class ZcServer {
       } else if (request.method == 'POST') {
         await updateSettings(request);
       } else {
-        await jsonResponse(request, {'error': 'method_not_allowed'}, HttpStatus.methodNotAllowed);
+        await jsonResponse(request, {
+          'error': 'method_not_allowed',
+        }, HttpStatus.methodNotAllowed);
       }
       return;
     }
@@ -251,9 +293,12 @@ class ZcServer {
   Future<void> addDevice(HttpRequest request) async {
     final decoded = await readJsonObject(request);
     final host = decoded['host']?.toString().trim() ?? '';
-    final port = int.tryParse(decoded['port']?.toString() ?? '') ?? defaultCompanionPort;
+    final port =
+        int.tryParse(decoded['port']?.toString() ?? '') ?? defaultCompanionPort;
     if (host.isEmpty) {
-      await jsonResponse(request, {'error': 'invalid_device'}, HttpStatus.badRequest);
+      await jsonResponse(request, {
+        'error': 'invalid_device',
+      }, HttpStatus.badRequest);
       return;
     }
     state.addManualDevice(host, port, decoded['hostname']?.toString());
@@ -294,7 +339,9 @@ class ZcServer {
       return;
     }
     request.response.headers.contentType = ContentType.html;
-    request.response.write('<!doctype html><meta charset="utf-8"><h1>ZcAgentBeacon server is running</h1>');
+    request.response.write(
+      '<!doctype html><meta charset="utf-8"><h1>ZcAgentBeacon server is running</h1>',
+    );
     await request.response.close();
   }
 
@@ -315,9 +362,11 @@ class ZcServer {
     unblankScreen();
     screenTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       final idleFor = DateTime.now().toUtc().difference(state.lastActivityAt);
-      if (!state.screenBlanked && idleFor.inSeconds >= state.settings.screenIdleSeconds) {
+      if (!state.screenBlanked &&
+          idleFor.inSeconds >= state.settings.screenIdleSeconds) {
         blankScreen();
-      } else if (state.screenBlanked && state.lastActivityAt.isAfter(state.screenBlankedAt!)) {
+      } else if (state.screenBlanked &&
+          state.lastActivityAt.isAfter(state.screenBlankedAt!)) {
         unblankScreen();
       }
     });
@@ -342,11 +391,15 @@ class ZcServer {
 
   Future<void> xset(List<String> args) async {
     try {
-      await Process.run('/usr/bin/xset', args, environment: {
-        ...Platform.environment,
-        'DISPLAY': state.settings.screenDisplay,
-        'XAUTHORITY': state.settings.screenXauthority,
-      }).timeout(const Duration(seconds: 3));
+      await Process.run(
+        '/usr/bin/xset',
+        args,
+        environment: {
+          ...Platform.environment,
+          'DISPLAY': state.settings.screenDisplay,
+          'XAUTHORITY': state.settings.screenXauthority,
+        },
+      ).timeout(const Duration(seconds: 3));
     } on Object {
       return;
     }
@@ -370,7 +423,9 @@ class DashboardState {
       }
       addManualDevice(
         parts.first.trim(),
-        parts.length > 1 ? int.tryParse(parts[1]) ?? defaultCompanionPort : defaultCompanionPort,
+        parts.length > 1
+            ? int.tryParse(parts[1]) ?? defaultCompanionPort
+            : defaultCompanionPort,
         null,
       );
     }
@@ -426,14 +481,20 @@ class DashboardState {
     );
   }
 
-  void mergeSnapshot(String key, AgentSnapshot snapshot, ZcStatusEngine engine) {
+  void mergeSnapshot(
+    String key,
+    AgentSnapshot snapshot,
+    ZcStatusEngine engine,
+  ) {
     final device = devices[key];
     if (device == null) {
       return;
     }
     device
       ..nodeId = snapshot.nodeId.isEmpty ? device.nodeId : snapshot.nodeId
-      ..hostname = snapshot.hostname.isEmpty ? device.hostname : snapshot.hostname
+      ..hostname = snapshot.hostname.isEmpty
+          ? device.hostname
+          : snapshot.hostname
       ..os = snapshot.os
       ..snapshot = snapshot
       ..lastSeenAt = DateTime.now().toUtc()
@@ -445,9 +506,10 @@ class DashboardState {
       if (auxiliaryProcessShadow(item)) {
         final peer = historyPeerForShadow(device.nodeId, item);
         if (peer != null) {
-          final merged = mergeAuxiliaryShadow(peer.value, item).copyWith(
-            seenAt: DateTime.now().toUtc(),
-          );
+          final merged = mergeAuxiliaryShadow(
+            peer.value,
+            item,
+          ).copyWith(seenAt: DateTime.now().toUtc());
           history[peer.key] = merged;
           if (item.status.isActive) {
             activeKeys.add(peer.key);
@@ -465,7 +527,8 @@ class DashboardState {
         seenAt: DateTime.now().toUtc(),
       );
       final previous = history[historyKey];
-      if (previous == null || jsonEncode(previous.toJson()) != jsonEncode(copied.toJson())) {
+      if (previous == null ||
+          jsonEncode(previous.toJson()) != jsonEncode(copied.toJson())) {
         markActivity('conversation_changed');
       }
       history[historyKey] = copied;
@@ -501,8 +564,14 @@ class DashboardState {
       return null;
     }
     candidates.sort((a, b) {
-      final aTime = a.value.lastEventAt ?? a.value.seenAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final bTime = b.value.lastEventAt ?? b.value.seenAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final aTime =
+          a.value.lastEventAt ??
+          a.value.seenAt ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime =
+          b.value.lastEventAt ??
+          b.value.seenAt ??
+          DateTime.fromMillisecondsSinceEpoch(0);
       return bTime.compareTo(aTime);
     });
     return candidates.first;
@@ -510,14 +579,17 @@ class DashboardState {
 
   void purgeAuxiliaryHistory(String deviceId) {
     final humanCwds = history.values
-        .where((item) => item.deviceId == deviceId && !auxiliaryProcessShadow(item))
+        .where(
+          (item) => item.deviceId == deviceId && !auxiliaryProcessShadow(item),
+        )
         .map((item) => normalizeCwd(item.cwd))
         .toSet();
     for (final entry in history.entries.toList()) {
       final item = entry.value;
       if (item.deviceId == deviceId &&
           auxiliaryProcessShadow(item) &&
-          (!item.status.isActive || humanCwds.contains(normalizeCwd(item.cwd)))) {
+          (!item.status.isActive ||
+              humanCwds.contains(normalizeCwd(item.cwd)))) {
         history.remove(entry.key);
       }
     }
@@ -553,8 +625,7 @@ class DashboardState {
         lastError: device.lastError,
         manual: device.manual,
       );
-    }).toList()
-      ..sort((a, b) => a.hostname.compareTo(b.hostname));
+    }).toList()..sort((a, b) => a.hostname.compareTo(b.hostname));
     final deviceStatusById = {
       for (final item in deviceViews) item.nodeId: item.status,
     };
@@ -564,12 +635,16 @@ class DashboardState {
       if (auxiliaryProcessShadow(item)) {
         continue;
       }
-      humanCwdsByDevice.putIfAbsent(item.deviceId, () => {}).add(normalizeCwd(item.cwd));
+      humanCwdsByDevice
+          .putIfAbsent(item.deviceId, () => {})
+          .add(normalizeCwd(item.cwd));
     }
     for (final item in history.values) {
       if (auxiliaryProcessShadow(item) &&
           (!item.status.isActive ||
-              (humanCwdsByDevice[item.deviceId] ?? {}).contains(normalizeCwd(item.cwd)))) {
+              (humanCwdsByDevice[item.deviceId] ?? {}).contains(
+                normalizeCwd(item.cwd),
+              ))) {
         continue;
       }
       final deviceStatus = deviceStatusById[item.deviceId];
@@ -581,8 +656,16 @@ class DashboardState {
       );
     }
     conversations.sort((a, b) {
-      final aTime = a.lastEventAt ?? a.seenAt ?? a.completedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final bTime = b.lastEventAt ?? b.seenAt ?? b.completedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final aTime =
+          a.lastEventAt ??
+          a.seenAt ??
+          a.completedAt ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime =
+          b.lastEventAt ??
+          b.seenAt ??
+          b.completedAt ??
+          DateTime.fromMillisecondsSinceEpoch(0);
       return bTime.compareTo(aTime);
     });
     return DashboardSnapshot(
@@ -669,33 +752,48 @@ class DashboardSettings {
   final String? token;
 
   Map<String, Object?> toJson() => {
-        'pollIntervalMs': pollIntervalMs,
-        'staleAfterSeconds': staleAfterSeconds,
-        'offlineAfterSeconds': offlineAfterSeconds,
-        'scanEnabled': scanEnabled,
-        'scanIntervalSeconds': scanIntervalSeconds,
-        'scanTimeoutMs': scanTimeoutMs,
-        'scanCidrs': scanCidrs,
-        'screenControlEnabled': screenControlEnabled,
-        'screenIdleSeconds': screenIdleSeconds,
-        'tokenEnabled': token != null && token!.isNotEmpty,
-      };
+    'pollIntervalMs': pollIntervalMs,
+    'staleAfterSeconds': staleAfterSeconds,
+    'offlineAfterSeconds': offlineAfterSeconds,
+    'scanEnabled': scanEnabled,
+    'scanIntervalSeconds': scanIntervalSeconds,
+    'scanTimeoutMs': scanTimeoutMs,
+    'scanCidrs': scanCidrs,
+    'screenControlEnabled': screenControlEnabled,
+    'screenIdleSeconds': screenIdleSeconds,
+    'tokenEnabled': token != null && token!.isNotEmpty,
+  };
 
   factory DashboardSettings.fromEnvironment() {
     return DashboardSettings(
-      pollIntervalMs: int.tryParse(env('ZC_AGENTBEACON_POLL_INTERVAL_MS') ?? '') ?? 2000,
-      staleAfterSeconds: int.tryParse(env('ZC_AGENTBEACON_STALE_SECONDS') ?? '') ?? 15,
-      offlineAfterSeconds: int.tryParse(env('ZC_AGENTBEACON_OFFLINE_SECONDS') ?? '') ?? 45,
+      pollIntervalMs:
+          int.tryParse(env('ZC_AGENTBEACON_POLL_INTERVAL_MS') ?? '') ?? 2000,
+      staleAfterSeconds:
+          int.tryParse(env('ZC_AGENTBEACON_STALE_SECONDS') ?? '') ?? 15,
+      offlineAfterSeconds:
+          int.tryParse(env('ZC_AGENTBEACON_OFFLINE_SECONDS') ?? '') ?? 45,
       scanEnabled: envFlag('ZC_AGENTBEACON_SCAN_ENABLED', true),
-      scanIntervalSeconds: max(10, int.tryParse(env('ZC_AGENTBEACON_SCAN_INTERVAL_SECONDS') ?? '') ?? 60),
-      scanTimeoutMs: max(200, int.tryParse(env('ZC_AGENTBEACON_SCAN_TIMEOUT_MS') ?? '') ?? 1200),
+      scanIntervalSeconds: max(
+        10,
+        int.tryParse(env('ZC_AGENTBEACON_SCAN_INTERVAL_SECONDS') ?? '') ?? 60,
+      ),
+      scanTimeoutMs: max(
+        200,
+        int.tryParse(env('ZC_AGENTBEACON_SCAN_TIMEOUT_MS') ?? '') ?? 1200,
+      ),
       scanCidrs: splitEnv('ZC_AGENTBEACON_SCAN_CIDRS'),
       manualDevices: splitEnv('ZC_AGENTBEACON_DEVICES'),
       screenControlEnabled: envFlag('ZC_AGENTBEACON_SCREEN_CONTROL', true),
-      screenIdleSeconds: max(10, int.tryParse(env('ZC_AGENTBEACON_SCREEN_IDLE_SECONDS') ?? '') ?? 600),
+      screenIdleSeconds: max(
+        10,
+        int.tryParse(env('ZC_AGENTBEACON_SCREEN_IDLE_SECONDS') ?? '') ?? 600,
+      ),
       screenDisplay: env('ZC_AGENTBEACON_SCREEN_DISPLAY') ?? ':0',
-      screenXauthority: env('ZC_AGENTBEACON_SCREEN_XAUTHORITY') ??
-          (Platform.environment['HOME'] == null ? '/home/pi/.Xauthority' : '${Platform.environment['HOME']}/.Xauthority'),
+      screenXauthority:
+          env('ZC_AGENTBEACON_SCREEN_XAUTHORITY') ??
+          (Platform.environment['HOME'] == null
+              ? '/home/pi/.Xauthority'
+              : '${Platform.environment['HOME']}/.Xauthority'),
       token: env('ZC_AGENTBEACON_TOKEN'),
     );
   }
@@ -703,12 +801,34 @@ class DashboardSettings {
   factory DashboardSettings.fromJson(Map<String, Object?> json) {
     final base = DashboardSettings.fromEnvironment();
     return DashboardSettings(
-      pollIntervalMs: max(500, int.tryParse(json['pollIntervalMs']?.toString() ?? '') ?? base.pollIntervalMs),
-      staleAfterSeconds: max(1, int.tryParse(json['staleAfterSeconds']?.toString() ?? '') ?? base.staleAfterSeconds),
-      offlineAfterSeconds: max(1, int.tryParse(json['offlineAfterSeconds']?.toString() ?? '') ?? base.offlineAfterSeconds),
-      scanEnabled: json['scanEnabled'] is bool ? json['scanEnabled'] as bool : base.scanEnabled,
-      scanIntervalSeconds: max(10, int.tryParse(json['scanIntervalSeconds']?.toString() ?? '') ?? base.scanIntervalSeconds),
-      scanTimeoutMs: max(200, int.tryParse(json['scanTimeoutMs']?.toString() ?? '') ?? base.scanTimeoutMs),
+      pollIntervalMs: max(
+        500,
+        int.tryParse(json['pollIntervalMs']?.toString() ?? '') ??
+            base.pollIntervalMs,
+      ),
+      staleAfterSeconds: max(
+        1,
+        int.tryParse(json['staleAfterSeconds']?.toString() ?? '') ??
+            base.staleAfterSeconds,
+      ),
+      offlineAfterSeconds: max(
+        1,
+        int.tryParse(json['offlineAfterSeconds']?.toString() ?? '') ??
+            base.offlineAfterSeconds,
+      ),
+      scanEnabled: json['scanEnabled'] is bool
+          ? json['scanEnabled'] as bool
+          : base.scanEnabled,
+      scanIntervalSeconds: max(
+        10,
+        int.tryParse(json['scanIntervalSeconds']?.toString() ?? '') ??
+            base.scanIntervalSeconds,
+      ),
+      scanTimeoutMs: max(
+        200,
+        int.tryParse(json['scanTimeoutMs']?.toString() ?? '') ??
+            base.scanTimeoutMs,
+      ),
       scanCidrs: (json['scanCidrs'] is List)
           ? (json['scanCidrs'] as List).map((item) => item.toString()).toList()
           : base.scanCidrs,
@@ -716,7 +836,11 @@ class DashboardSettings {
       screenControlEnabled: json['screenControlEnabled'] is bool
           ? json['screenControlEnabled'] as bool
           : base.screenControlEnabled,
-      screenIdleSeconds: max(10, int.tryParse(json['screenIdleSeconds']?.toString() ?? '') ?? base.screenIdleSeconds),
+      screenIdleSeconds: max(
+        10,
+        int.tryParse(json['screenIdleSeconds']?.toString() ?? '') ??
+            base.screenIdleSeconds,
+      ),
       screenDisplay: base.screenDisplay,
       screenXauthority: base.screenXauthority,
       token: base.token,
@@ -725,7 +849,11 @@ class DashboardSettings {
 }
 
 class ProbeResult {
-  const ProbeResult({required this.host, required this.port, required this.hostname});
+  const ProbeResult({
+    required this.host,
+    required this.port,
+    required this.hostname,
+  });
   final String host;
   final int port;
   final String hostname;
@@ -759,14 +887,21 @@ Future<void> jsonResponse(
 void setCors(HttpResponse response) {
   response.headers.set('Access-Control-Allow-Origin', '*');
   response.headers.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  response.headers.set(
+    'Access-Control-Allow-Headers',
+    'Content-Type,Authorization',
+  );
 }
 
 ContentType contentType(String path) {
   final lower = path.toLowerCase();
   if (lower.endsWith('.html')) return ContentType.html;
-  if (lower.endsWith('.js')) return ContentType('application', 'javascript', charset: 'utf-8');
-  if (lower.endsWith('.css')) return ContentType('text', 'css', charset: 'utf-8');
+  if (lower.endsWith('.js')) {
+    return ContentType('application', 'javascript', charset: 'utf-8');
+  }
+  if (lower.endsWith('.css')) {
+    return ContentType('text', 'css', charset: 'utf-8');
+  }
   if (lower.endsWith('.json')) return ContentType.json;
   if (lower.endsWith('.png')) return ContentType('image', 'png');
   if (lower.endsWith('.svg')) return ContentType('image', 'svg+xml');
@@ -829,7 +964,8 @@ String? stringArg(List<String> args, String name) {
   return args[index + 1];
 }
 
-int? intArg(List<String> args, String name) => int.tryParse(stringArg(args, name) ?? '');
+int? intArg(List<String> args, String name) =>
+    int.tryParse(stringArg(args, name) ?? '');
 
 String? env(String name) {
   final value = Platform.environment[name];

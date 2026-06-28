@@ -32,21 +32,20 @@ class ZcStatusEngine {
     return foldAuxiliaryConversations(out);
   }
 
-  ConversationView? conversationFromRaw(
-    RawConversation raw, {
-    DateTime? now,
-  }) {
+  ConversationView? conversationFromRaw(RawConversation raw, {DateTime? now}) {
     final current = now ?? DateTime.now().toUtc();
     final activity = _activityFromSignals(raw);
     for (final process in raw.processes) {
-      final procTime = process.updatedAt ??
+      final procTime =
+          process.updatedAt ??
           (process.updatedAtMs == null
               ? null
               : DateTime.fromMillisecondsSinceEpoch(
                   process.updatedAtMs!,
                   isUtc: true,
                 ));
-      if (procTime == null || procTime.isBefore(current.subtract(processFreshness))) {
+      if (procTime == null ||
+          procTime.isBefore(current.subtract(processFreshness))) {
         continue;
       }
       final procTurn = process.turnId;
@@ -57,7 +56,9 @@ class ZcStatusEngine {
           !activity.lastTaskCompleteAt!.isBefore(procTime)) {
         continue;
       }
-      activity.pendingCalls.add('process:${procTurn ?? procTime.toIso8601String()}');
+      activity.pendingCalls.add(
+        'process:${procTurn ?? procTime.toIso8601String()}',
+      );
       activity.turnId = process.turnId ?? activity.turnId;
       activity.lastToolName ??= 'tool';
       activity.lastCommand ??= _masker.mask(process.command);
@@ -67,21 +68,26 @@ class ZcStatusEngine {
     }
 
     var active = activity.hasOpenTurn || activity.pendingCalls.isNotEmpty;
-    active = active ||
+    active =
+        active ||
         (activity.lastResponseAt != null &&
-            current.difference(activity.lastResponseAt!) <= activeEventFreshness &&
+            current.difference(activity.lastResponseAt!) <=
+                activeEventFreshness &&
             (activity.lastTaskCompleteAt == null ||
-                activity.lastResponseAt!.isAfter(activity.lastTaskCompleteAt!)));
+                activity.lastResponseAt!.isAfter(
+                  activity.lastTaskCompleteAt!,
+                )));
 
     final status = active
         ? (activity.pendingCalls.isNotEmpty
-            ? ConversationStatus.toolRunning
-            : ConversationStatus.thinking)
+              ? ConversationStatus.toolRunning
+              : ConversationStatus.thinking)
         : (activity.lastTerminalStatus == 'interrupted' &&
-                activity.lastTaskCompleteAt != null &&
-                current.difference(activity.lastTaskCompleteAt!) <= activeEventFreshness)
-            ? ConversationStatus.interrupted
-            : ConversationStatus.idle;
+              activity.lastTaskCompleteAt != null &&
+              current.difference(activity.lastTaskCompleteAt!) <=
+                  activeEventFreshness)
+        ? ConversationStatus.interrupted
+        : ConversationStatus.idle;
 
     final eventAt = [
       activity.lastResponseAt,
@@ -97,7 +103,8 @@ class ZcStatusEngine {
       return null;
     }
 
-    final auxiliary = machineGeneratedTitle(raw.title, raw.conversationId) &&
+    final auxiliary =
+        machineGeneratedTitle(raw.title, raw.conversationId) &&
         raw.processes.isNotEmpty &&
         raw.events.isEmpty;
     return ConversationView(
@@ -122,7 +129,8 @@ class ZcStatusEngine {
 
   _Activity _activityFromSignals(RawConversation raw) {
     final activity = _Activity(_masker);
-    final events = [...raw.events]..sort((a, b) {
+    final events = [...raw.events]
+      ..sort((a, b) {
         final aTime = eventTime(a) ?? DateTime.fromMillisecondsSinceEpoch(0);
         final bTime = eventTime(b) ?? DateTime.fromMillisecondsSinceEpoch(0);
         return aTime.compareTo(bTime);
@@ -143,14 +151,19 @@ class ZcStatusEngine {
       } else if (kind == 'turn_end' ||
           event.type == 'task_complete' ||
           isAbortEvent(event.type)) {
-        final terminal = event.terminalStatus == 'interrupted' || isAbortEvent(event.type)
+        final terminal =
+            event.terminalStatus == 'interrupted' || isAbortEvent(event.type)
             ? 'interrupted'
             : 'idle';
         final completedAt = event.completedAt ?? eventAt;
         activity.finishTurn(turnId, completedAt ?? eventAt, terminal);
         if (event.messageSummary != null) {
           activity.lastMessageSummary = _masker.mask(event.messageSummary);
-          activity.setDisplay(activity.lastMessageSummary, completedAt ?? eventAt, terminal);
+          activity.setDisplay(
+            activity.lastMessageSummary,
+            completedAt ?? eventAt,
+            terminal,
+          );
         }
       } else if (kind == 'tool_call') {
         if (turnId != null && activity.completedTurnIds.contains(turnId)) {
@@ -165,8 +178,9 @@ class ZcStatusEngine {
         if (explanation != null && explanation.trim().isNotEmpty) {
           activity.lastExplanation = _masker.mask(explanation, limit: 360);
           activity.lastMessageSummary = activity.lastExplanation;
-          activity.lastToolName =
-              event.toolName == 'update_plan' ? 'explanation' : event.toolName;
+          activity.lastToolName = event.toolName == 'update_plan'
+              ? 'explanation'
+              : event.toolName;
           activity.lastCommand = '';
           activity.setDisplay(activity.lastExplanation, eventAt, 'explanation');
         } else {
@@ -189,7 +203,8 @@ class ZcStatusEngine {
         if (turnId != null && activity.completedTurnIds.contains(turnId)) {
           continue;
         }
-        if (kind == 'message' && ['user', 'developer', 'system'].contains(event.role)) {
+        if (kind == 'message' &&
+            ['user', 'developer', 'system'].contains(event.role)) {
           continue;
         }
         if (event.messageSummary == null) {
@@ -204,12 +219,19 @@ class ZcStatusEngine {
         }
         activity.noteResponse('reasoning', eventAt, turnId);
         if (event.explanation != null && event.explanation!.trim().isNotEmpty) {
-          activity.lastExplanation = _masker.mask(event.explanation, limit: 360);
+          activity.lastExplanation = _masker.mask(
+            event.explanation,
+            limit: 360,
+          );
           activity.lastMessageSummary = activity.lastExplanation;
           activity.setDisplay(activity.lastExplanation, eventAt, 'explanation');
         } else if (event.messageSummary != null) {
           activity.lastMessageSummary = _masker.mask(event.messageSummary);
-          activity.setDisplay(activity.lastMessageSummary, eventAt, 'reasoning');
+          activity.setDisplay(
+            activity.lastMessageSummary,
+            eventAt,
+            'reasoning',
+          );
         } else if (activity.displayDetail == null) {
           activity.setDisplay('正在思考...', eventAt, 'reasoning');
         }
@@ -252,7 +274,11 @@ class _Activity {
     }
   }
 
-  void finishTurn(String? finishedTurnId, DateTime? completedAt, String terminal) {
+  void finishTurn(
+    String? finishedTurnId,
+    DateTime? completedAt,
+    String terminal,
+  ) {
     hasOpenTurn = false;
     pendingCalls.clear();
     if (finishedTurnId != null) {
@@ -341,7 +367,9 @@ bool auxiliaryProcessShadow(ConversationView item) {
       (item.lastExplanation ?? '').isEmpty;
 }
 
-List<ConversationView> foldAuxiliaryConversations(List<ConversationView> items) {
+List<ConversationView> foldAuxiliaryConversations(
+  List<ConversationView> items,
+) {
   final visible = <ConversationView>[];
   final byCwd = <String, List<int>>{};
   final shadows = <ConversationView>[];
@@ -351,7 +379,9 @@ List<ConversationView> foldAuxiliaryConversations(List<ConversationView> items) 
       shadows.add(item);
       continue;
     }
-    byCwd.putIfAbsent(normalizeCwd(item.cwd), () => <int>[]).add(visible.length);
+    byCwd
+        .putIfAbsent(normalizeCwd(item.cwd), () => <int>[])
+        .add(visible.length);
     visible.add(item);
   }
 
@@ -367,16 +397,20 @@ List<ConversationView> foldAuxiliaryConversations(List<ConversationView> items) 
       continue;
     }
     final targetIndex = peers.reduce((a, b) {
-      final aTime = visible[a].lastEventAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final bTime = visible[b].lastEventAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final aTime =
+          visible[a].lastEventAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime =
+          visible[b].lastEventAt ?? DateTime.fromMillisecondsSinceEpoch(0);
       return aTime.isAfter(bTime) ? a : b;
     });
     visible[targetIndex] = mergeAuxiliaryShadow(visible[targetIndex], shadow);
   }
 
   visible.sort((a, b) {
-    final aTime = a.lastEventAt ?? a.seenAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-    final bTime = b.lastEventAt ?? b.seenAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final aTime =
+        a.lastEventAt ?? a.seenAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final bTime =
+        b.lastEventAt ?? b.seenAt ?? DateTime.fromMillisecondsSinceEpoch(0);
     return bTime.compareTo(aTime);
   });
   return visible;
@@ -397,18 +431,17 @@ ConversationView mergeAuxiliaryShadow(
     folded.add(shadow.conversationId);
   }
   return target.copyWith(
-    status: shadow.status == ConversationStatus.toolRunning || !target.status.isActive
+    status:
+        shadow.status == ConversationStatus.toolRunning ||
+            !target.status.isActive
         ? shadow.status
         : target.status,
     turnId: shadow.turnId ?? target.turnId,
     lastEventAt: shadowIsLatest ? shadow.lastEventAt : target.lastEventAt,
-    lastToolName:
-        shadowIsLatest ? shadow.lastToolName : target.lastToolName,
+    lastToolName: shadowIsLatest ? shadow.lastToolName : target.lastToolName,
     lastCommand: shadowIsLatest ? shadow.lastCommand : target.lastCommand,
-    displayDetail:
-        shadowIsLatest ? shadow.displayDetail : target.displayDetail,
-    displaySource:
-        shadowIsLatest ? shadow.displaySource : target.displaySource,
+    displayDetail: shadowIsLatest ? shadow.displayDetail : target.displayDetail,
+    displaySource: shadowIsLatest ? shadow.displaySource : target.displaySource,
     foldedAuxiliaryIds: folded,
   );
 }

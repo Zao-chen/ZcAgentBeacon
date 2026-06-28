@@ -82,37 +82,43 @@ void main() {
     expect(items.single.displayDetail, '正在整理计划');
   });
 
-  test('folds uuid process-only auxiliary conversation into real conversation', () {
-    final now = DateTime.utc(2026, 6, 28, 1);
-    final items = engine.conversationsFromRaw([
-      RawConversation(
-        conversationId: '019f0973-452d-7f92-952d-6fab0cc180fe',
-        title: '寻找近月少女选题',
-        cwd: '/Users/me/project',
-        updatedAt: now,
-        events: [
-          RawEventSignal(
-            type: 'task_started',
-            kind: 'turn_start',
-            turnId: 'turn-real',
-            eventAt: now,
-          ),
-        ],
-      ),
-      RawConversation(
-        conversationId: '019f0979-5e37-7e90-b2b0-9d81ab32bf52',
-        title: '019f0979-5e37-7e90-b2b0-9d81ab32bf52',
-        cwd: '/Users/me/project',
-        updatedAt: now,
-        processes: [
-          RawProcessSignal(command: 'sed -n 1,20p file.json', updatedAt: now),
-        ],
-      ),
-    ], now: now);
+  test(
+    'folds uuid process-only auxiliary conversation into real conversation',
+    () {
+      final now = DateTime.utc(2026, 6, 28, 1);
+      final items = engine.conversationsFromRaw([
+        RawConversation(
+          conversationId: '019f0973-452d-7f92-952d-6fab0cc180fe',
+          title: '寻找近月少女选题',
+          cwd: '/Users/me/project',
+          updatedAt: now,
+          events: [
+            RawEventSignal(
+              type: 'task_started',
+              kind: 'turn_start',
+              turnId: 'turn-real',
+              eventAt: now,
+            ),
+          ],
+        ),
+        RawConversation(
+          conversationId: '019f0979-5e37-7e90-b2b0-9d81ab32bf52',
+          title: '019f0979-5e37-7e90-b2b0-9d81ab32bf52',
+          cwd: '/Users/me/project',
+          updatedAt: now,
+          processes: [
+            RawProcessSignal(command: 'sed -n 1,20p file.json', updatedAt: now),
+          ],
+        ),
+      ], now: now);
 
-    expect(items, hasLength(1));
-    expect(items.single.title, '寻找近月少女选题');
-    expect(items.single.status, ConversationStatus.toolRunning);
-    expect(items.single.foldedAuxiliaryIds, contains('019f0979-5e37-7e90-b2b0-9d81ab32bf52'));
-  });
+      expect(items, hasLength(1));
+      expect(items.single.title, '寻找近月少女选题');
+      expect(items.single.status, ConversationStatus.toolRunning);
+      expect(
+        items.single.foldedAuxiliaryIds,
+        contains('019f0979-5e37-7e90-b2b0-9d81ab32bf52'),
+      );
+    },
+  );
 }

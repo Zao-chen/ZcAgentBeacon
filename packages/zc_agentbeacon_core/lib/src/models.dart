@@ -13,15 +13,15 @@ enum ConversationStatus {
 
 extension ConversationStatusWire on ConversationStatus {
   String get wireName => switch (this) {
-        ConversationStatus.thinking => 'thinking',
-        ConversationStatus.working => 'working',
-        ConversationStatus.toolRunning => 'tool_running',
-        ConversationStatus.waitingForUser => 'waiting_for_user',
-        ConversationStatus.idle => 'idle',
-        ConversationStatus.interrupted => 'interrupted',
-        ConversationStatus.stale => 'stale',
-        ConversationStatus.errorOffline => 'error_offline',
-      };
+    ConversationStatus.thinking => 'thinking',
+    ConversationStatus.working => 'working',
+    ConversationStatus.toolRunning => 'tool_running',
+    ConversationStatus.waitingForUser => 'waiting_for_user',
+    ConversationStatus.idle => 'idle',
+    ConversationStatus.interrupted => 'interrupted',
+    ConversationStatus.stale => 'stale',
+    ConversationStatus.errorOffline => 'error_offline',
+  };
 
   bool get isActive =>
       this == ConversationStatus.thinking ||
@@ -75,20 +75,20 @@ class RawEventSignal {
   final String? explanation;
 
   Map<String, Object?> toJson() => {
-        'type': type,
-        'kind': kind,
-        'turnId': turnId,
-        'eventAt': eventAt?.toUtc().toIso8601String(),
-        'completedAt': completedAt?.toUtc().toIso8601String(),
-        'callId': callId,
-        'toolName': toolName,
-        'role': role,
-        'terminalStatus': terminalStatus,
-        'messageSummary': messageSummary,
-        'argumentsSummary': argumentsSummary,
-        'outputSummary': outputSummary,
-        'explanation': explanation,
-      }..removeWhere((_, value) => value == null || value == '');
+    'type': type,
+    'kind': kind,
+    'turnId': turnId,
+    'eventAt': eventAt?.toUtc().toIso8601String(),
+    'completedAt': completedAt?.toUtc().toIso8601String(),
+    'callId': callId,
+    'toolName': toolName,
+    'role': role,
+    'terminalStatus': terminalStatus,
+    'messageSummary': messageSummary,
+    'argumentsSummary': argumentsSummary,
+    'outputSummary': outputSummary,
+    'explanation': explanation,
+  }..removeWhere((_, value) => value == null || value == '');
 
   factory RawEventSignal.fromJson(Map<String, Object?> json) {
     return RawEventSignal(
@@ -123,11 +123,11 @@ class RawProcessSignal {
   final int? updatedAtMs;
 
   Map<String, Object?> toJson() => {
-        'turnId': turnId,
-        'command': command,
-        'updatedAt': updatedAt?.toUtc().toIso8601String(),
-        'updatedAtMs': updatedAtMs,
-      }..removeWhere((_, value) => value == null || value == '');
+    'turnId': turnId,
+    'command': command,
+    'updatedAt': updatedAt?.toUtc().toIso8601String(),
+    'updatedAtMs': updatedAtMs,
+  }..removeWhere((_, value) => value == null || value == '');
 
   factory RawProcessSignal.fromJson(Map<String, Object?> json) {
     return RawProcessSignal(
@@ -159,14 +159,14 @@ class RawConversation {
   final String detailLevel;
 
   Map<String, Object?> toJson() => {
-        'conversationId': conversationId,
-        'title': title,
-        'cwd': cwd,
-        'updatedAt': updatedAt?.toUtc().toIso8601String(),
-        'events': events.map((item) => item.toJson()).toList(),
-        'processes': processes.map((item) => item.toJson()).toList(),
-        'detailLevel': detailLevel,
-      };
+    'conversationId': conversationId,
+    'title': title,
+    'cwd': cwd,
+    'updatedAt': updatedAt?.toUtc().toIso8601String(),
+    'events': events.map((item) => item.toJson()).toList(),
+    'processes': processes.map((item) => item.toJson()).toList(),
+    'detailLevel': detailLevel,
+  };
 
   factory RawConversation.fromJson(Map<String, Object?> json) {
     return RawConversation(
@@ -180,7 +180,9 @@ class RawConversation {
           .toList(),
       processes: list(json['processes'])
           .whereType<Map>()
-          .map((item) => RawProcessSignal.fromJson(item.cast<String, Object?>()))
+          .map(
+            (item) => RawProcessSignal.fromJson(item.cast<String, Object?>()),
+          )
           .toList(),
       detailLevel: string(json['detailLevel'], fallback: 'signals'),
     );
@@ -209,15 +211,15 @@ class AgentSnapshot {
   final String agentVersion;
 
   Map<String, Object?> toJson() => {
-        'nodeId': nodeId,
-        'hostname': hostname,
-        'os': os,
-        'agentVersion': agentVersion,
-        'codexRunning': codexRunning,
-        'rawConversations': rawConversations.map((item) => item.toJson()).toList(),
-        'errors': errors,
-        'collectedAt': collectedAt.toUtc().toIso8601String(),
-      };
+    'nodeId': nodeId,
+    'hostname': hostname,
+    'os': os,
+    'agentVersion': agentVersion,
+    'codexRunning': codexRunning,
+    'rawConversations': rawConversations.map((item) => item.toJson()).toList(),
+    'errors': errors,
+    'collectedAt': collectedAt.toUtc().toIso8601String(),
+  };
 
   factory AgentSnapshot.fromJson(Map<String, Object?> json) {
     return AgentSnapshot(
@@ -330,29 +332,29 @@ class ConversationView {
   }
 
   Map<String, Object?> toJson() => {
-        'conversationId': conversationId,
-        'title': title,
-        'cwd': cwd,
-        'status': status.wireName,
-        'turnId': turnId,
-        'lastEventAt': lastEventAt?.toUtc().toIso8601String(),
-        'completedAt': completedAt?.toUtc().toIso8601String(),
-        'lastToolName': lastToolName,
-        'lastCommand': lastCommand,
-        'lastToolOutput': lastToolOutput,
-        'lastExplanation': lastExplanation,
-        'lastMessageSummary': lastMessageSummary,
-        'displayDetail': displayDetail,
-        'displaySource': displaySource,
-        'detailLevel': detailLevel,
-        'deviceId': deviceId,
-        'deviceName': deviceName,
-        'deviceHost': deviceHost,
-        'seenAt': seenAt?.toUtc().toIso8601String(),
-        'suppressCompletion': suppressCompletion,
-        'isAuxiliaryProcess': isAuxiliaryProcess,
-        'foldedAuxiliaryIds': foldedAuxiliaryIds,
-      }..removeWhere((_, value) => value == null);
+    'conversationId': conversationId,
+    'title': title,
+    'cwd': cwd,
+    'status': status.wireName,
+    'turnId': turnId,
+    'lastEventAt': lastEventAt?.toUtc().toIso8601String(),
+    'completedAt': completedAt?.toUtc().toIso8601String(),
+    'lastToolName': lastToolName,
+    'lastCommand': lastCommand,
+    'lastToolOutput': lastToolOutput,
+    'lastExplanation': lastExplanation,
+    'lastMessageSummary': lastMessageSummary,
+    'displayDetail': displayDetail,
+    'displaySource': displaySource,
+    'detailLevel': detailLevel,
+    'deviceId': deviceId,
+    'deviceName': deviceName,
+    'deviceHost': deviceHost,
+    'seenAt': seenAt?.toUtc().toIso8601String(),
+    'suppressCompletion': suppressCompletion,
+    'isAuxiliaryProcess': isAuxiliaryProcess,
+    'foldedAuxiliaryIds': foldedAuxiliaryIds,
+  }..removeWhere((_, value) => value == null);
 
   factory ConversationView.fromJson(Map<String, Object?> json) {
     return ConversationView(
@@ -377,8 +379,9 @@ class ConversationView {
       seenAt: date(json['seenAt']),
       suppressCompletion: json['suppressCompletion'] == true,
       isAuxiliaryProcess: json['isAuxiliaryProcess'] == true,
-      foldedAuxiliaryIds:
-          list(json['foldedAuxiliaryIds']).map((item) => item.toString()).toList(),
+      foldedAuxiliaryIds: list(
+        json['foldedAuxiliaryIds'],
+      ).map((item) => item.toString()).toList(),
     );
   }
 }
@@ -413,19 +416,19 @@ class DeviceView {
   final bool manual;
 
   Map<String, Object?> toJson() => {
-        'nodeId': nodeId,
-        'hostname': hostname,
-        'host': host,
-        'port': port,
-        'os': os,
-        'status': status.wireName,
-        'codexRunning': codexRunning,
-        'conversationCount': conversationCount,
-        'lastSeenAt': lastSeenAt?.toUtc().toIso8601String(),
-        'lastBeaconAt': lastBeaconAt?.toUtc().toIso8601String(),
-        'lastError': lastError,
-        'manual': manual,
-      }..removeWhere((_, value) => value == null);
+    'nodeId': nodeId,
+    'hostname': hostname,
+    'host': host,
+    'port': port,
+    'os': os,
+    'status': status.wireName,
+    'codexRunning': codexRunning,
+    'conversationCount': conversationCount,
+    'lastSeenAt': lastSeenAt?.toUtc().toIso8601String(),
+    'lastBeaconAt': lastBeaconAt?.toUtc().toIso8601String(),
+    'lastError': lastError,
+    'manual': manual,
+  }..removeWhere((_, value) => value == null);
 
   factory DeviceView.fromJson(Map<String, Object?> json) {
     return DeviceView(
@@ -462,11 +465,11 @@ class DashboardSnapshot {
       conversations.where((item) => item.status.isActive).length;
 
   Map<String, Object?> toJson() => {
-        'generatedAt': generatedAt.toUtc().toIso8601String(),
-        'devices': devices.map((item) => item.toJson()).toList(),
-        'conversations': conversations.map((item) => item.toJson()).toList(),
-        'screen': screen,
-      }..removeWhere((_, value) => value == null);
+    'generatedAt': generatedAt.toUtc().toIso8601String(),
+    'devices': devices.map((item) => item.toJson()).toList(),
+    'conversations': conversations.map((item) => item.toJson()).toList(),
+    'screen': screen,
+  }..removeWhere((_, value) => value == null);
 
   String encode() => jsonEncode(toJson());
 
@@ -479,9 +482,13 @@ class DashboardSnapshot {
           .toList(),
       conversations: list(json['conversations'])
           .whereType<Map>()
-          .map((item) => ConversationView.fromJson(item.cast<String, Object?>()))
+          .map(
+            (item) => ConversationView.fromJson(item.cast<String, Object?>()),
+          )
           .toList(),
-      screen: json['screen'] is Map ? (json['screen'] as Map).cast<String, Object?>() : null,
+      screen: json['screen'] is Map
+          ? (json['screen'] as Map).cast<String, Object?>()
+          : null,
     );
   }
 

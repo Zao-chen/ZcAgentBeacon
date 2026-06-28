@@ -27,10 +27,13 @@ class SecretMasker {
         final found = match.group(0) ?? '';
         final equals = found.indexOf('=');
         final colon = found.indexOf(':');
-        final index = [equals, colon].where((item) => item >= 0).fold<int>(
-          -1,
-          (previous, item) => previous < 0 || item < previous ? item : previous,
-        );
+        final index = [equals, colon]
+            .where((item) => item >= 0)
+            .fold<int>(
+              -1,
+              (previous, item) =>
+                  previous < 0 || item < previous ? item : previous,
+            );
         if (index < 0) {
           return '[secret]';
         }

@@ -21,6 +21,11 @@ jobs:
       - uses: dart-lang/setup-dart@v1
         with:
           sdk: 3.12.2
+      - name: Toolchain info
+        run: |
+          git rev-parse HEAD
+          dart --version
+          flutter --version
       - name: Format check
         run: dart format --output=none --set-exit-if-changed packages apps
       - name: Analyze

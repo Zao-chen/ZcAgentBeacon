@@ -1,5 +1,5 @@
-name: zc_agentbeacon_server
-description: ZcAgentBeacon dashboard aggregation server.
+name: zc_agentbeacon_hub
+description: ZcAgentBeacon dashboard Hub implementation.
 version: 0.1.0
 publish_to: none
 resolution: workspace
@@ -13,3 +13,4 @@ dependencies:
 
 dev_dependencies:
   lints: ^5.0.0
+  test: ^1.25.0

@@ -50,25 +50,21 @@ class CodexAdapter {
     int? tailLines,
     int? maxThreads,
     int? rawEventLimit,
-  }) : _masker = masker ?? SecretMasker(),
-       _sqliteCommand =
-           sqliteCommand ?? env('ZC_AGENTBEACON_SQLITE3') ?? 'sqlite3',
-       _tailBytes =
-           tailBytes ??
-           int.tryParse(env('ZC_AGENTBEACON_TAIL_BYTES') ?? '') ??
-           384 * 1024,
-       _tailLines =
-           tailLines ??
-           int.tryParse(env('ZC_AGENTBEACON_TAIL_LINES') ?? '') ??
-           2500,
-       _maxThreads =
-           maxThreads ??
-           int.tryParse(env('ZC_AGENTBEACON_MAX_THREADS') ?? '') ??
-           10,
-       _rawEventLimit =
-           rawEventLimit ??
-           int.tryParse(env('ZC_AGENTBEACON_RAW_EVENT_LIMIT') ?? '') ??
-           360;
+  })  : _masker = masker ?? SecretMasker(),
+        _sqliteCommand =
+            sqliteCommand ?? env('ZC_AGENTBEACON_SQLITE3') ?? 'sqlite3',
+        _tailBytes = tailBytes ??
+            int.tryParse(env('ZC_AGENTBEACON_TAIL_BYTES') ?? '') ??
+            384 * 1024,
+        _tailLines = tailLines ??
+            int.tryParse(env('ZC_AGENTBEACON_TAIL_LINES') ?? '') ??
+            2500,
+        _maxThreads = maxThreads ??
+            int.tryParse(env('ZC_AGENTBEACON_MAX_THREADS') ?? '') ??
+            10,
+        _rawEventLimit = rawEventLimit ??
+            int.tryParse(env('ZC_AGENTBEACON_RAW_EVENT_LIMIT') ?? '') ??
+            360;
 
   static const _processFreshness = Duration(seconds: 45);
   static const _activeEventFreshness = Duration(minutes: 10);
@@ -129,8 +125,7 @@ class CodexAdapter {
     for (final process in processes) {
       final thread = threadById[process.conversationId];
       final existing = raw[process.conversationId];
-      final conversation =
-          existing ??
+      final conversation = existing ??
           RawConversation(
             conversationId: process.conversationId,
             title: process.chatTitle ?? thread?.title ?? process.conversationId,
@@ -195,6 +190,16 @@ class CodexAdapter {
       decoded['timestamp'] ?? decoded['ts'] ?? decoded['created_at'],
     );
     final payload = asMap(decoded['payload']);
+    final topLevelType = decoded['type']?.toString();
+    if (topLevelType == 'session_meta') {
+      return RawEventSignal(
+        type: topLevelType!,
+        kind: 'session_meta',
+        eventAt: eventAt,
+        role: payload['thread_source']?.toString(),
+        messageSummary: _masker.mask(summarize(payload['source']), limit: 360),
+      );
+    }
     final item = asMap(payload['item']);
     final data = item.isEmpty ? payload : item;
     final eventType = (data['type'] ?? payload['type'])?.toString();
@@ -464,8 +469,7 @@ Directory codexHome() {
   if (override != null) {
     return Directory(override);
   }
-  final home =
-      Platform.environment['HOME'] ??
+  final home = Platform.environment['HOME'] ??
       Platform.environment['USERPROFILE'] ??
       '.';
   return Directory(pathJoin(home, '.codex'));
@@ -608,8 +612,8 @@ bool isAssistantMessage(Map<String, Object?> data) {
   final content = data['content'];
   if (content is List) {
     return content.whereType<Map>().any(
-      (item) => item['type'] == 'output_text',
-    );
+          (item) => item['type'] == 'output_text',
+        );
   }
   return content != null && contentText(content).isNotEmpty;
 }

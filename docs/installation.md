@@ -2,55 +2,66 @@
 
 ## Release Artifacts
 
-GitHub Actions publishes:
+GitHub Actions publishes role-based packages:
 
-- `ZcAgentBeacon-windows-x64.zip`
-- `ZcAgentBeacon-macos-universal.tar.gz`
-- `ZcAgentBeacon-linux-x64.tar.gz`
-- `ZcAgentBeacon-linux-x64.deb`
-- `ZcAgentBeacon-RaspberryPi-arm64.tar.gz`
-- `ZcAgentBeacon-RaspberryPi-source.tar.gz`
+- `ZcAgentBeaconCompanion-windows-x64.zip`
+- `ZcAgentBeaconCompanion-macos-x64.tar.gz`
+- `ZcAgentBeaconCompanion-linux-x64.tar.gz`
+- `ZcAgentBeaconHub-linux-x64.tar.gz`
+- `ZcAgentBeaconHub-linux-x64.deb`
+- `ZcAgentBeaconHub-raspberry-pi-source.tar.gz`
 - `SHA256SUMS`
 
 ## Companion
 
-Install companion on every Codex workstation.
+Install Companion on every Codex workstation.
 
 Windows:
 
 ```powershell
-Expand-Archive .\ZcAgentBeacon-windows-x64.zip
-cd .\ZcAgentBeacon-windows-x64
+Expand-Archive .\ZcAgentBeaconCompanion-windows-x64.zip
+cd .\ZcAgentBeaconCompanion-windows-x64
 .\install-companion.ps1
 ```
 
 macOS:
 
 ```sh
-tar -xzf ZcAgentBeacon-macos-universal.tar.gz
+tar -xzf ZcAgentBeaconCompanion-macos-x64.tar.gz
 sh install-companion.sh
 ```
 
 Linux:
 
 ```sh
-tar -xzf ZcAgentBeacon-linux-x64.tar.gz
+tar -xzf ZcAgentBeaconCompanion-linux-x64.tar.gz
 sh install-companion.sh
 ```
 
-## Raspberry Pi Dashboard
+## Hub And Dashboard
+
+Install Hub on the device that serves the dashboard.
+
+Linux x64:
 
 ```sh
-tar -xzf ZcAgentBeacon-RaspberryPi-arm64.tar.gz
-sudo sh install-server.sh
-sudo sh install-kiosk.sh
+tar -xzf ZcAgentBeaconHub-linux-x64.tar.gz
+sudo sh install-hub.sh
 ```
 
-If the arm64 artifact is unavailable for your Pi, use the source package and build on-device with Dart/Flutter installed:
+Debian/Ubuntu x64:
 
 ```sh
-tar -xzf ZcAgentBeacon-RaspberryPi-source.tar.gz
+sudo apt install ./ZcAgentBeaconHub-linux-x64.deb
+sudo systemctl enable --now zc-agentbeacon
+```
+
+Raspberry Pi:
+
+```sh
+tar -xzf ZcAgentBeaconHub-raspberry-pi-source.tar.gz
 sh scripts/build_on_pi.sh
 cd installers/raspberry-pi
-sudo sh install-server.sh
+sudo sh install-hub.sh
+sudo sh install-kiosk.sh
 ```

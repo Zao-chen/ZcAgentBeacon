@@ -3,10 +3,10 @@
 ZcAgentBeacon has three runtime parts:
 
 1. Companion runs on each Codex workstation.
-2. Server runs on Raspberry Pi or a LAN host.
-3. Dashboard is Flutter Web served by the server.
+2. Hub runs on Raspberry Pi or a LAN host.
+3. Dashboard is Flutter Web served by the Hub.
 
-The companion reads local Codex state and returns raw signals. It does not decide whether a conversation is thinking, running a tool, completed, or interrupted. The server owns all state inference so behavior updates usually require only a server/dashboard upgrade.
+The companion reads local Codex state and returns raw signals. It does not decide whether a conversation is thinking, running a tool, completed, or interrupted. The Hub owns all state inference so behavior updates usually require only a Hub/dashboard upgrade.
 
 ## Data Flow
 
@@ -19,7 +19,7 @@ The companion reads local Codex state and returns raw signals. It does not decid
 companion /status rawConversations
         |
         v
-server status engine + history + discovery
+Hub status engine + history + discovery
         |
         v
 Flutter Web dashboard over HTTP/WebSocket

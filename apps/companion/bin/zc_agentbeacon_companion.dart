@@ -11,16 +11,16 @@ const discoveryPort = 42179;
 const defaultPort = 42180;
 
 Future<void> main(List<String> args) async {
-  final port =
-      intArg(args, '--port') ??
+  final port = intArg(args, '--port') ??
       int.tryParse(env('ZC_AGENTBEACON_COMPANION_PORT') ?? '') ??
       defaultPort;
-  final host =
-      stringArg(args, '--host') ??
+  final host = stringArg(args, '--host') ??
       env('ZC_AGENTBEACON_COMPANION_HOST') ??
       await defaultLanHost();
-  final allowedServer =
-      stringArg(args, '--allow-server') ?? env('ZC_AGENTBEACON_ALLOWED_SERVER');
+  final allowedServer = stringArg(args, '--allow-hub') ??
+      stringArg(args, '--allow-server') ??
+      env('ZC_AGENTBEACON_ALLOWED_HUB') ??
+      env('ZC_AGENTBEACON_ALLOWED_SERVER');
   final token = stringArg(args, '--token') ?? env('ZC_AGENTBEACON_TOKEN');
 
   final server = CompanionServer(
@@ -55,9 +55,8 @@ class CompanionServer {
   Timer? _beaconTimer;
 
   Future<void> start() async {
-    final bind = host == '0.0.0.0'
-        ? InternetAddress.anyIPv4
-        : InternetAddress(host);
+    final bind =
+        host == '0.0.0.0' ? InternetAddress.anyIPv4 : InternetAddress(host);
     _httpServer = await HttpServer.bind(bind, port);
     _httpServer!.listen(handleRequest);
     await startBeaconing();

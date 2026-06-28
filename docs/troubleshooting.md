@@ -5,11 +5,11 @@
 - Confirm companion is running: `http://<device-ip>:42180/health`.
 - Confirm raw status is available: `http://<device-ip>:42180/status`.
 - Check firewall private/LAN access.
-- Set `ZC_AGENTBEACON_DEVICES=<device-ip>:42180` on the server to bypass discovery.
+- Set `ZC_AGENTBEACON_DEVICES=<device-ip>:42180` on the Hub to bypass discovery.
 
 ## Conversation is stuck in thinking
 
-The server decides state from raw signals. Upgrade the server first. If it still happens, save the relevant `rawConversations` item and open an issue with secrets removed.
+The Hub decides state from raw signals. Upgrade the Hub first. If it still happens, save the relevant `rawConversations` item and open an issue with secrets removed.
 
 ## UUID-like rows appear
 

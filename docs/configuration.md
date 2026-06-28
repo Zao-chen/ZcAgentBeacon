@@ -10,15 +10,15 @@ All configuration is optional. Defaults are LAN-first and token-free.
 | `ZC_AGENTBEACON_COMPANION_PORT` | `42180` | HTTP port |
 | `ZC_AGENTBEACON_CODEX_HOME` | `~/.codex` | Codex data directory |
 | `ZC_AGENTBEACON_SQLITE3` | `sqlite3` | sqlite command |
-| `ZC_AGENTBEACON_ALLOWED_SERVER` | empty | Comma-separated allowed server IPs |
+| `ZC_AGENTBEACON_ALLOWED_HUB` | empty | Comma-separated allowed Hub IPs |
 | `ZC_AGENTBEACON_TOKEN` | empty | Optional bearer/query token |
 
-## Server
+## Hub
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `ZC_AGENTBEACON_SERVER_HOST` | `0.0.0.0` | Bind address |
-| `ZC_AGENTBEACON_SERVER_PORT` | `42178` | HTTP port |
+| `ZC_AGENTBEACON_HUB_HOST` | `0.0.0.0` | Hub bind address |
+| `ZC_AGENTBEACON_HUB_PORT` | `42178` | Hub HTTP port |
 | `ZC_AGENTBEACON_WEB_ROOT` | `apps/dashboard/build/web` | Dashboard static files |
 | `ZC_AGENTBEACON_DEVICES` | empty | Manual `host:port` list |
 | `ZC_AGENTBEACON_SCAN_CIDRS` | local `/24` | Scan ranges |
@@ -28,4 +28,4 @@ All configuration is optional. Defaults are LAN-first and token-free.
 | `ZC_AGENTBEACON_SCREEN_CONTROL` | `1` | Linux/X11 screen blanking |
 | `ZC_AGENTBEACON_SCREEN_IDLE_SECONDS` | `600` | Idle seconds before blanking |
 
-Legacy `AGENTBEACON_*` variables are only recognized by the old reference implementation under `legacy/`.
+`ZC_AGENTBEACON_ALLOWED_SERVER`, `ZC_AGENTBEACON_SERVER_HOST`, and `ZC_AGENTBEACON_SERVER_PORT` are still accepted as compatibility aliases. Legacy `AGENTBEACON_*` variables are only recognized by the old reference implementation under `legacy/`.

@@ -2,7 +2,7 @@
 set -eu
 
 if [ "$(id -u)" -ne 0 ]; then
-  echo "Run with sudo: sudo sh uninstall-server.sh" >&2
+  echo "Run with sudo: sudo sh uninstall-hub.sh" >&2
   exit 1
 fi
 
@@ -11,4 +11,4 @@ rm -f /etc/systemd/system/zc-agentbeacon.service
 rm -rf /opt/ZcAgentBeacon
 systemctl daemon-reload
 
-echo "ZcAgentBeacon Server uninstalled."
+echo "ZcAgentBeacon Hub uninstalled."

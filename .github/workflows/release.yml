@@ -25,22 +25,21 @@ jobs:
           channel: stable
           cache: true
       - run: dart pub get
-      - run: New-Item -ItemType Directory -Force -Path dist/windows | Out-Null
+      - run: New-Item -ItemType Directory -Force -Path dist/companion-windows | Out-Null
         shell: pwsh
-      - name: Build CLIs
+      - name: Build Companion
         shell: pwsh
         run: |
-          dart compile exe apps/companion/bin/zc_agentbeacon_companion.dart -o dist/windows/zc-agentbeacon-companion.exe
-          dart compile exe apps/server/bin/zc_agentbeacon_server.dart -o dist/windows/zc-agentbeacon-server.exe
-          Copy-Item installers/windows/* dist/windows/
-          Compress-Archive -Path dist/windows/* -DestinationPath dist/ZcAgentBeacon-windows-x64.zip
+          dart compile exe apps/companion/bin/zc_agentbeacon_companion.dart -o dist/companion-windows/zc-agentbeacon-companion.exe
+          Copy-Item installers/windows/* dist/companion-windows/
+          Compress-Archive -Path dist/companion-windows/* -DestinationPath dist/ZcAgentBeaconCompanion-windows-x64.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: windows
-          path: dist/ZcAgentBeacon-windows-x64.zip
+          name: companion-windows
+          path: dist/ZcAgentBeaconCompanion-windows-x64.zip
 
   macos:
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -48,18 +47,17 @@ jobs:
           channel: stable
           cache: true
       - run: dart pub get
-      - name: Build CLIs
+      - name: Build Companion
         run: |
-          mkdir -p dist/macos
-          dart compile exe apps/companion/bin/zc_agentbeacon_companion.dart -o dist/macos/zc-agentbeacon-companion
-          dart compile exe apps/server/bin/zc_agentbeacon_server.dart -o dist/macos/zc-agentbeacon-server
-          cp installers/macos/* dist/macos/
-          chmod +x dist/macos/*
-          tar -czf dist/ZcAgentBeacon-macos-universal.tar.gz -C dist/macos .
+          mkdir -p dist/companion-macos
+          dart compile exe apps/companion/bin/zc_agentbeacon_companion.dart -o dist/companion-macos/zc-agentbeacon-companion
+          cp installers/macos/* dist/companion-macos/
+          chmod +x dist/companion-macos/*
+          tar -czf dist/ZcAgentBeaconCompanion-macos-x64.tar.gz -C dist/companion-macos .
       - uses: actions/upload-artifact@v4
         with:
-          name: macos
-          path: dist/ZcAgentBeacon-macos-universal.tar.gz
+          name: companion-macos
+          path: dist/ZcAgentBeaconCompanion-macos-x64.tar.gz
 
   linux:
     runs-on: ubuntu-latest
@@ -75,17 +73,19 @@ jobs:
           RELEASE_INPUT_TAG: ${{ inputs.tag }}
         run: |
           set -eux
-          mkdir -p dist/linux
+          mkdir -p dist/companion-linux dist/hub-linux/dashboard
           (cd apps/dashboard && flutter build web --release)
-          dart compile exe apps/companion/bin/zc_agentbeacon_companion.dart -o dist/linux/zc-agentbeacon-companion
-          dart compile exe apps/server/bin/zc_agentbeacon_server.dart -o dist/linux/zc-agentbeacon-server
-          cp installers/linux/* dist/linux/
-          chmod +x dist/linux/*
-          tar -czf dist/ZcAgentBeacon-linux-x64.tar.gz -C dist/linux .
+          dart compile exe apps/companion/bin/zc_agentbeacon_companion.dart -o dist/companion-linux/zc-agentbeacon-companion
+          dart compile exe apps/server/bin/zc_agentbeacon_hub.dart -o dist/hub-linux/zc-agentbeacon-hub
+          cp installers/linux/install-companion.sh installers/linux/uninstall-companion.sh dist/companion-linux/
+          cp installers/linux/install-hub.sh installers/linux/uninstall-hub.sh dist/hub-linux/
+          cp -R apps/dashboard/build/web/. dist/hub-linux/dashboard/
+          chmod +x dist/companion-linux/* dist/hub-linux/zc-agentbeacon-hub dist/hub-linux/install-hub.sh dist/hub-linux/uninstall-hub.sh
+          tar -czf dist/ZcAgentBeaconCompanion-linux-x64.tar.gz -C dist/companion-linux .
+          tar -czf dist/ZcAgentBeaconHub-linux-x64.tar.gz -C dist/hub-linux .
 
-          mkdir -p deb/DEBIAN deb/usr/bin deb/usr/share/zc-agentbeacon/dashboard
-          cp dist/linux/zc-agentbeacon-companion deb/usr/bin/
-          cp dist/linux/zc-agentbeacon-server deb/usr/bin/
+          mkdir -p deb/DEBIAN deb/usr/bin deb/usr/share/zc-agentbeacon/dashboard deb/usr/lib/systemd/system
+          cp dist/hub-linux/zc-agentbeacon-hub deb/usr/bin/
           cp -R apps/dashboard/build/web/. deb/usr/share/zc-agentbeacon/dashboard/
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
             PACKAGE_VERSION="${RELEASE_INPUT_TAG}"
@@ -99,21 +99,41 @@ jobs:
             PACKAGE_VERSION="0.0.0+${GITHUB_RUN_NUMBER:-0}"
           fi
           cat > deb/DEBIAN/control <<EOF
-          Package: zc-agentbeacon
+          Package: zc-agentbeacon-hub
           Version: ${PACKAGE_VERSION}
           Section: utils
           Priority: optional
           Architecture: amd64
           Maintainer: ZcAgentBeacon
-          Description: LAN dashboard for Codex conversation status
+          Description: LAN hub and dashboard for Codex conversation status
           EOF
-          dpkg-deb --build deb dist/ZcAgentBeacon-linux-x64.deb
+          cat > deb/usr/lib/systemd/system/zc-agentbeacon.service <<EOF
+          [Unit]
+          Description=ZcAgentBeacon Hub
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Environment=ZC_AGENTBEACON_HUB_PORT=42178
+          Environment=ZC_AGENTBEACON_WEB_ROOT=/usr/share/zc-agentbeacon/dashboard
+          ExecStart=/usr/bin/zc-agentbeacon-hub --host 0.0.0.0 --port 42178 --web-root /usr/share/zc-agentbeacon/dashboard
+          Restart=always
+          RestartSec=3
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          dpkg-deb --build deb dist/ZcAgentBeaconHub-linux-x64.deb
       - uses: actions/upload-artifact@v4
         with:
-          name: linux
+          name: companion-linux
+          path: dist/ZcAgentBeaconCompanion-linux-x64.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hub-linux
           path: |
-            dist/ZcAgentBeacon-linux-x64.tar.gz
-            dist/ZcAgentBeacon-linux-x64.deb
+            dist/ZcAgentBeaconHub-linux-x64.tar.gz
+            dist/ZcAgentBeaconHub-linux-x64.deb
 
   raspberry-pi:
     runs-on: ubuntu-latest
@@ -131,11 +151,11 @@ jobs:
           (cd apps/dashboard && flutter build web --release)
           cp -R apps packages installers/raspberry-pi scripts pubspec.yaml analysis_options.yaml dist/pi-source/
           cp -R apps/dashboard/build/web/. dist/pi-source/dashboard/
-          tar -czf dist/ZcAgentBeacon-RaspberryPi-source.tar.gz -C dist/pi-source .
+          tar -czf dist/ZcAgentBeaconHub-raspberry-pi-source.tar.gz -C dist/pi-source .
       - uses: actions/upload-artifact@v4
         with:
-          name: raspberry-pi
-          path: dist/ZcAgentBeacon-RaspberryPi-source.tar.gz
+          name: hub-raspberry-pi
+          path: dist/ZcAgentBeaconHub-raspberry-pi-source.tar.gz
 
   publish:
     needs: [windows, macos, linux, raspberry-pi]

@@ -28,17 +28,17 @@ cd ../..
 dart run zc_agentbeacon_companion:zc_agentbeacon_companion
 ```
 
-启动 server：
+启动 Hub：
 
 ```sh
-dart run zc_agentbeacon_server:zc_agentbeacon_server --web-root apps/dashboard/build/web
+dart run zc_agentbeacon_hub:zc_agentbeacon_hub --web-root apps/dashboard/build/web
 ```
 
 默认地址：
 
 ```text
 Companion: http://<device-ip>:42180/status
-Dashboard: http://<server-ip>:42178
+Dashboard: http://<hub-ip>:42178
 ```
 
 ## 仓库结构
@@ -46,7 +46,7 @@ Dashboard: http://<server-ip>:42178
 ```text
 packages/zc_agentbeacon_core   共享模型、Codex adapter、状态机
 apps/companion                 本机 Codex raw-signal companion
-apps/server                    聚合 server、发现、扫描、屏幕控制
+apps/server                    Hub 实现、发现、扫描、屏幕控制
 apps/dashboard                 Flutter Web dashboard
 installers/                    各平台安装脚本
 docs/                          详细文档
@@ -55,7 +55,7 @@ legacy/                        旧 Python/Dart 参考实现，不进入发布包
 
 ## Pull Requests
 
-- Keep companion raw-signal only; status inference belongs in the server/core.
+- Keep Companion raw-signal only; status inference belongs in the Hub/core.
 - Add tests for status-machine changes.
 - Do not commit local `.codex` data, screenshots, build outputs, or release archives.
 - Document new configuration in `docs/configuration.md`.

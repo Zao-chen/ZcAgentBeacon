@@ -36,8 +36,7 @@ class ZcStatusEngine {
     final current = now ?? DateTime.now().toUtc();
     final activity = _activityFromSignals(raw);
     for (final process in raw.processes) {
-      final procTime =
-          process.updatedAt ??
+      final procTime = process.updatedAt ??
           (process.updatedAtMs == null
               ? null
               : DateTime.fromMillisecondsSinceEpoch(
@@ -68,8 +67,8 @@ class ZcStatusEngine {
     }
 
     var active = activity.hasOpenTurn || activity.pendingCalls.isNotEmpty;
-    active =
-        active ||
+    active = active || activity.hasFreshPendingUserInput(current);
+    active = active ||
         (activity.lastResponseAt != null &&
             current.difference(activity.lastResponseAt!) <=
                 activeEventFreshness &&
@@ -80,14 +79,14 @@ class ZcStatusEngine {
 
     final status = active
         ? (activity.pendingCalls.isNotEmpty
-              ? ConversationStatus.toolRunning
-              : ConversationStatus.thinking)
+            ? ConversationStatus.toolRunning
+            : ConversationStatus.thinking)
         : (activity.lastTerminalStatus == 'interrupted' &&
-              activity.lastTaskCompleteAt != null &&
-              current.difference(activity.lastTaskCompleteAt!) <=
-                  activeEventFreshness)
-        ? ConversationStatus.interrupted
-        : ConversationStatus.idle;
+                activity.lastTaskCompleteAt != null &&
+                current.difference(activity.lastTaskCompleteAt!) <=
+                    activeEventFreshness)
+            ? ConversationStatus.interrupted
+            : ConversationStatus.idle;
 
     final eventAt = [
       activity.lastResponseAt,
@@ -103,10 +102,14 @@ class ZcStatusEngine {
       return null;
     }
 
-    final auxiliary =
+    final processAuxiliary =
         machineGeneratedTitle(raw.title, raw.conversationId) &&
         raw.processes.isNotEmpty &&
         raw.events.isEmpty;
+    final supportAuxiliary = supportSession(raw);
+    final completedAt = activity.hasUserInputAfterCompletion
+        ? null
+        : activity.lastTaskCompleteAt;
     return ConversationView(
       conversationId: raw.conversationId,
       title: preferredTitle(raw.title, raw.conversationId, raw.cwd),
@@ -114,6 +117,10 @@ class ZcStatusEngine {
       status: status,
       turnId: activity.turnId,
       lastEventAt: eventAt,
+      completedAt: status == ConversationStatus.idle ||
+              status == ConversationStatus.interrupted
+          ? completedAt
+          : null,
       lastToolName: activity.lastToolName,
       lastCommand: activity.lastCommand,
       lastToolOutput: activity.lastToolOutput,
@@ -122,15 +129,14 @@ class ZcStatusEngine {
       displayDetail: activity.displayDetail,
       displaySource: activity.displaySource,
       detailLevel: 'signals',
-      suppressCompletion: auxiliary,
-      isAuxiliaryProcess: auxiliary,
+      suppressCompletion: processAuxiliary || supportAuxiliary,
+      isAuxiliaryProcess: processAuxiliary || supportAuxiliary,
     );
   }
 
   _Activity _activityFromSignals(RawConversation raw) {
     final activity = _Activity(_masker);
-    final events = [...raw.events]
-      ..sort((a, b) {
+    final events = [...raw.events]..sort((a, b) {
         final aTime = eventTime(a) ?? DateTime.fromMillisecondsSinceEpoch(0);
         final bTime = eventTime(b) ?? DateTime.fromMillisecondsSinceEpoch(0);
         return aTime.compareTo(bTime);
@@ -153,8 +159,8 @@ class ZcStatusEngine {
           isAbortEvent(event.type)) {
         final terminal =
             event.terminalStatus == 'interrupted' || isAbortEvent(event.type)
-            ? 'interrupted'
-            : 'idle';
+                ? 'interrupted'
+                : 'idle';
         final completedAt = event.completedAt ?? eventAt;
         activity.finishTurn(turnId, completedAt ?? eventAt, terminal);
         if (event.messageSummary != null) {
@@ -178,9 +184,8 @@ class ZcStatusEngine {
         if (explanation != null && explanation.trim().isNotEmpty) {
           activity.lastExplanation = _masker.mask(explanation, limit: 360);
           activity.lastMessageSummary = activity.lastExplanation;
-          activity.lastToolName = event.toolName == 'update_plan'
-              ? 'explanation'
-              : event.toolName;
+          activity.lastToolName =
+              event.toolName == 'update_plan' ? 'explanation' : event.toolName;
           activity.lastCommand = '';
           activity.setDisplay(activity.lastExplanation, eventAt, 'explanation');
         } else {
@@ -203,8 +208,16 @@ class ZcStatusEngine {
         if (turnId != null && activity.completedTurnIds.contains(turnId)) {
           continue;
         }
-        if (kind == 'message' &&
-            ['user', 'developer', 'system'].contains(event.role)) {
+        if (kind == 'message' && event.role == 'user') {
+          activity.noteUserInput(eventAt, turnId);
+          activity.setDisplay(
+            event.messageSummary ?? '收到新的输入，等待 Codex 响应',
+            eventAt,
+            'user_input',
+          );
+          continue;
+        }
+        if (kind == 'message' && ['developer', 'system'].contains(event.role)) {
           continue;
         }
         if (event.messageSummary == null) {
@@ -252,6 +265,7 @@ class _Activity {
   DateTime? lastEventAt;
   DateTime? lastResponseAt;
   DateTime? lastTaskCompleteAt;
+  DateTime? lastUserInputAt;
   String? lastTerminalStatus;
   String? lastActivityKind;
   String? lastToolName;
@@ -272,6 +286,29 @@ class _Activity {
       lastResponseAt = eventAt;
       lastActivityKind = kind;
     }
+  }
+
+  void noteUserInput(DateTime? eventAt, String? newTurnId) {
+    if (newTurnId != null && !completedTurnIds.contains(newTurnId)) {
+      turnId = newTurnId;
+    }
+    if (eventAt != null) {
+      lastUserInputAt = eventAt;
+      lastActivityKind = 'user_input';
+    }
+  }
+
+  bool get hasUserInputAfterCompletion {
+    if (lastUserInputAt == null) {
+      return false;
+    }
+    return lastTaskCompleteAt == null ||
+        lastUserInputAt!.isAfter(lastTaskCompleteAt!);
+  }
+
+  bool hasFreshPendingUserInput(DateTime current) {
+    return hasUserInputAfterCompletion &&
+        current.difference(lastUserInputAt!) <= activeEventFreshness;
   }
 
   void finishTurn(
@@ -342,6 +379,30 @@ bool machineGeneratedTitle(String? title, String? conversationId) {
     return true;
   }
   return (id.isNotEmpty && text == id) || _machineId.hasMatch(text);
+}
+
+bool supportSession(RawConversation raw) {
+  if (looksLikeApprovalTitle(raw.title)) {
+    return true;
+  }
+  return raw.events.any((event) {
+    if (event.kind != 'session_meta') {
+      return false;
+    }
+    final role = (event.role ?? '').toLowerCase();
+    final summary = (event.messageSummary ?? '').toLowerCase();
+    return role == 'subagent' ||
+        summary.contains('subagent') ||
+        summary.contains('guardian') ||
+        summary.contains('auto-review');
+  });
+}
+
+bool looksLikeApprovalTitle(String? title) {
+  final text = (title ?? '').trim().toLowerCase();
+  return text.startsWith(
+    'the following is the codex agent history whose request action you are assessing',
+  );
 }
 
 String preferredTitle(String title, String conversationId, String cwd) {
@@ -431,8 +492,7 @@ ConversationView mergeAuxiliaryShadow(
     folded.add(shadow.conversationId);
   }
   return target.copyWith(
-    status:
-        shadow.status == ConversationStatus.toolRunning ||
+    status: shadow.status == ConversationStatus.toolRunning ||
             !target.status.isActive
         ? shadow.status
         : target.status,

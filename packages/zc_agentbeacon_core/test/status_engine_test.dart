@@ -54,7 +54,47 @@ void main() {
     ], now: now);
 
     expect(items.single.status, ConversationStatus.idle);
+    expect(items.single.completedAt, now);
     expect(items.single.displayDetail, '已经完成');
+  });
+
+  test('new user image input after completion stays pending', () {
+    final completedAt = DateTime.utc(2026, 6, 28, 1);
+    final inputAt = completedAt.add(const Duration(seconds: 3));
+    final items = engine.conversationsFromRaw([
+      RawConversation(
+        conversationId: 'conv-image',
+        title: '读图测试',
+        cwd: '/tmp/project',
+        updatedAt: inputAt,
+        events: [
+          RawEventSignal(
+            type: 'task_started',
+            kind: 'turn_start',
+            turnId: 'turn-1',
+            eventAt: completedAt.subtract(const Duration(seconds: 4)),
+          ),
+          RawEventSignal(
+            type: 'task_complete',
+            kind: 'turn_end',
+            turnId: 'turn-1',
+            eventAt: completedAt,
+            completedAt: completedAt,
+            messageSummary: '上一轮已经完成',
+          ),
+          RawEventSignal(
+            type: 'message',
+            kind: 'message',
+            role: 'user',
+            eventAt: inputAt,
+          ),
+        ],
+      ),
+    ], now: inputAt);
+
+    expect(items.single.status, ConversationStatus.thinking);
+    expect(items.single.completedAt, isNull);
+    expect(items.single.displayDetail, '收到新的输入，等待 Codex 响应');
   });
 
   test('explanation is preferred as display detail', () {
@@ -121,4 +161,41 @@ void main() {
       );
     },
   );
+
+  test('suppresses completed subagent sessions from the main list', () {
+    final now = DateTime.utc(2026, 6, 28, 1);
+    final items = engine.conversationsFromRaw([
+      RawConversation(
+        conversationId: 'subagent-1',
+        title:
+            'The following is the Codex agent history whose request action you are assessing.',
+        cwd: '/tmp/project',
+        updatedAt: now,
+        events: [
+          RawEventSignal(
+            type: 'session_meta',
+            kind: 'session_meta',
+            eventAt: now.subtract(const Duration(seconds: 2)),
+            role: 'subagent',
+            messageSummary: '{"subagent":{"other":"guardian"}}',
+          ),
+          RawEventSignal(
+            type: 'task_started',
+            kind: 'turn_start',
+            turnId: 'turn-sub',
+            eventAt: now.subtract(const Duration(seconds: 1)),
+          ),
+          RawEventSignal(
+            type: 'task_complete',
+            kind: 'turn_end',
+            turnId: 'turn-sub',
+            eventAt: now,
+            completedAt: now,
+          ),
+        ],
+      ),
+    ], now: now);
+
+    expect(items, isEmpty);
+  });
 }

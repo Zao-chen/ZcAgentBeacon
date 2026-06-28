@@ -31,9 +31,8 @@ ThemeData _theme(Brightness brightness) {
       seedColor: const Color(0xff087f8c),
       brightness: brightness,
     ),
-    scaffoldBackgroundColor: dark
-        ? const Color(0xff0f141b)
-        : const Color(0xfff5f6f7),
+    scaffoldBackgroundColor:
+        dark ? const Color(0xff0f141b) : const Color(0xfff5f6f7),
   );
 }
 
@@ -131,13 +130,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final key = conversationKey(conversation);
       present.add(key);
       final previous = knownStatuses[key];
-      final doneId =
-          '$key:${conversation.completedAt ?? conversation.lastEventAt ?? conversation.seenAt}';
+      final completedAt = conversation.completedAt;
+      final doneId = completedAt == null ? null : '$key:$completedAt';
       if (loaded &&
           !conversation.suppressCompletion &&
           previous != null &&
-          previous.isActive &&
+          (previous.isActive || previous == ConversationStatus.stale) &&
           conversation.status == ConversationStatus.idle &&
+          completedAt != null &&
+          doneId != null &&
           !notifiedCompletions.contains(doneId)) {
         notifiedCompletions.add(doneId);
         justCompleted[key] = now;
@@ -166,8 +167,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final conversations = [...snapshot.conversations]
-      ..sort((a, b) {
+    final conversations = [...snapshot.conversations]..sort((a, b) {
         final aTime =
             a.lastEventAt ?? a.seenAt ?? a.completedAt ?? DateTime(1970);
         final bTime =
@@ -368,8 +368,7 @@ class ConversationRow extends StatelessWidget {
                     Row(
                       children: [
                         DeviceChip(
-                          name:
-                              conversation.deviceName ??
+                          name: conversation.deviceName ??
                               conversation.deviceHost ??
                               '未知设备',
                         ),
@@ -508,8 +507,7 @@ class _MotionDotState extends State<MotionDot>
         ),
       );
     }
-    final active =
-        widget.status == ConversationStatus.thinking ||
+    final active = widget.status == ConversationStatus.thinking ||
         widget.status == ConversationStatus.working;
     return ScaleTransition(
       scale: active
@@ -632,15 +630,15 @@ StatusInfo statusInfo(ConversationStatus status) {
     ConversationStatus.thinking => const StatusInfo('思考', Color(0xff087f8c)),
     ConversationStatus.working => const StatusInfo('运行', Color(0xff087f8c)),
     ConversationStatus.waitingForUser => const StatusInfo(
-      '等待',
-      Color(0xff3366cc),
-    ),
+        '等待',
+        Color(0xff3366cc),
+      ),
     ConversationStatus.interrupted => const StatusInfo('中断', Color(0xffb3261e)),
     ConversationStatus.stale => const StatusInfo('过期', Color(0xffb15f00)),
     ConversationStatus.errorOffline => const StatusInfo(
-      '离线',
-      Color(0xffb3261e),
-    ),
+        '离线',
+        Color(0xffb3261e),
+      ),
     ConversationStatus.idle => const StatusInfo('完成', Color(0xff66717d)),
   };
 }

@@ -14,22 +14,21 @@ const defaultCompanionPort = 42180;
 
 Future<void> main(List<String> args) async {
   final server = ZcServer(
-    host:
-        stringArg(args, '--host') ??
+    host: stringArg(args, '--host') ??
+        env('ZC_AGENTBEACON_HUB_HOST') ??
         env('ZC_AGENTBEACON_SERVER_HOST') ??
         '0.0.0.0',
-    port:
-        intArg(args, '--port') ??
+    port: intArg(args, '--port') ??
+        int.tryParse(env('ZC_AGENTBEACON_HUB_PORT') ?? '') ??
         int.tryParse(env('ZC_AGENTBEACON_SERVER_PORT') ?? '') ??
         defaultServerPort,
-    webRoot:
-        stringArg(args, '--web-root') ??
+    webRoot: stringArg(args, '--web-root') ??
         env('ZC_AGENTBEACON_WEB_ROOT') ??
         'apps/dashboard/build/web',
   );
   await server.start();
   stdout.writeln(
-    '$productName Server listening on http://${server.host}:${server.port}',
+    '$productName Hub listening on http://${server.host}:${server.port}',
   );
 }
 
@@ -67,9 +66,8 @@ class ZcServer {
   }
 
   Future<void> startHttp() async {
-    final bind = host == '0.0.0.0'
-        ? InternetAddress.anyIPv4
-        : InternetAddress(host);
+    final bind =
+        host == '0.0.0.0' ? InternetAddress.anyIPv4 : InternetAddress(host);
     httpServer = await HttpServer.bind(bind, port);
     httpServer!.listen(handleRequest);
   }
@@ -141,15 +139,14 @@ class ZcServer {
             ? null
             : {'token': state.settings.token!},
       );
-      final request = await client
-          .getUrl(uri)
-          .timeout(const Duration(seconds: 2));
+      final request =
+          await client.getUrl(uri).timeout(const Duration(seconds: 2));
       if (state.settings.token != null) {
         request.headers.set('Authorization', 'Bearer ${state.settings.token}');
       }
       final response = await request.close().timeout(
-        const Duration(seconds: 3),
-      );
+            const Duration(seconds: 3),
+          );
       final body = await utf8.decoder.bind(response).join();
       if (response.statusCode != HttpStatus.ok) {
         throw HttpException('HTTP ${response.statusCode}: $body');
@@ -190,8 +187,8 @@ class ZcServer {
           )
           .timeout(Duration(milliseconds: state.settings.scanTimeoutMs));
       final healthResponse = await health.close().timeout(
-        const Duration(seconds: 2),
-      );
+            const Duration(seconds: 2),
+          );
       await healthResponse.drain();
       if (healthResponse.statusCode >= 400) {
         return null;
@@ -207,8 +204,8 @@ class ZcServer {
           )
           .timeout(const Duration(seconds: 2));
       final response = await request.close().timeout(
-        const Duration(seconds: 3),
-      );
+            const Duration(seconds: 3),
+          );
       final decoded = jsonDecode(await utf8.decoder.bind(response).join());
       if (decoded is! Map || !decoded.containsKey('rawConversations')) {
         return null;
@@ -263,11 +260,8 @@ class ZcServer {
     }
     if (request.uri.path == '/api/devices' && request.method == 'GET') {
       await jsonResponse(request, {
-        'devices': state
-            .snapshot()
-            .devices
-            .map((item) => item.toJson())
-            .toList(),
+        'devices':
+            state.snapshot().devices.map((item) => item.toJson()).toList(),
       });
       return;
     }
@@ -281,9 +275,12 @@ class ZcServer {
       } else if (request.method == 'POST') {
         await updateSettings(request);
       } else {
-        await jsonResponse(request, {
-          'error': 'method_not_allowed',
-        }, HttpStatus.methodNotAllowed);
+        await jsonResponse(
+            request,
+            {
+              'error': 'method_not_allowed',
+            },
+            HttpStatus.methodNotAllowed);
       }
       return;
     }
@@ -296,9 +293,12 @@ class ZcServer {
     final port =
         int.tryParse(decoded['port']?.toString() ?? '') ?? defaultCompanionPort;
     if (host.isEmpty) {
-      await jsonResponse(request, {
-        'error': 'invalid_device',
-      }, HttpStatus.badRequest);
+      await jsonResponse(
+          request,
+          {
+            'error': 'invalid_device',
+          },
+          HttpStatus.badRequest);
       return;
     }
     state.addManualDevice(host, port, decoded['hostname']?.toString());
@@ -340,7 +340,7 @@ class ZcServer {
     }
     request.response.headers.contentType = ContentType.html;
     request.response.write(
-      '<!doctype html><meta charset="utf-8"><h1>ZcAgentBeacon server is running</h1>',
+      '<!doctype html><meta charset="utf-8"><h1>ZcAgentBeacon Hub is running</h1>',
     );
     await request.response.close();
   }
@@ -490,14 +490,14 @@ class DashboardState {
     if (device == null) {
       return;
     }
+    final now = DateTime.now().toUtc();
     device
       ..nodeId = snapshot.nodeId.isEmpty ? device.nodeId : snapshot.nodeId
-      ..hostname = snapshot.hostname.isEmpty
-          ? device.hostname
-          : snapshot.hostname
+      ..hostname =
+          snapshot.hostname.isEmpty ? device.hostname : snapshot.hostname
       ..os = snapshot.os
       ..snapshot = snapshot
-      ..lastSeenAt = DateTime.now().toUtc()
+      ..lastSeenAt = now
       ..lastError = null;
 
     final activeKeys = <String>{};
@@ -509,7 +509,7 @@ class DashboardState {
           final merged = mergeAuxiliaryShadow(
             peer.value,
             item,
-          ).copyWith(seenAt: DateTime.now().toUtc());
+          ).copyWith(seenAt: now);
           history[peer.key] = merged;
           if (item.status.isActive) {
             activeKeys.add(peer.key);
@@ -524,7 +524,7 @@ class DashboardState {
         deviceId: device.nodeId,
         deviceName: device.hostname,
         deviceHost: '${device.host}:${device.port}',
-        seenAt: DateTime.now().toUtc(),
+        seenAt: now,
       );
       final previous = history[historyKey];
       if (previous == null ||
@@ -540,11 +540,19 @@ class DashboardState {
         continue;
       }
       if (item.status.isActive) {
-        history[entry.key] = item.copyWith(
-          status: ConversationStatus.idle,
-          completedAt: DateTime.now().toUtc(),
+        final lastSeen = item.seenAt ?? item.lastEventAt ?? now;
+        final missingFor = now.difference(lastSeen);
+        final grace = Duration(
+          seconds: settings.missingConversationGraceSeconds,
         );
-        markActivity('conversation_completed');
+        if (missingFor < grace) {
+          continue;
+        }
+        history[entry.key] = item.copyWith(
+          status: ConversationStatus.stale,
+          seenAt: now,
+        );
+        markActivity('conversation_stale');
       }
     }
   }
@@ -564,12 +572,10 @@ class DashboardState {
       return null;
     }
     candidates.sort((a, b) {
-      final aTime =
-          a.value.lastEventAt ??
+      final aTime = a.value.lastEventAt ??
           a.value.seenAt ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final bTime =
-          b.value.lastEventAt ??
+      final bTime = b.value.lastEventAt ??
           b.value.seenAt ??
           DateTime.fromMillisecondsSinceEpoch(0);
       return bTime.compareTo(aTime);
@@ -625,7 +631,8 @@ class DashboardState {
         lastError: device.lastError,
         manual: device.manual,
       );
-    }).toList()..sort((a, b) => a.hostname.compareTo(b.hostname));
+    }).toList()
+      ..sort((a, b) => a.hostname.compareTo(b.hostname));
     final deviceStatusById = {
       for (final item in deviceViews) item.nodeId: item.status,
     };
@@ -656,13 +663,11 @@ class DashboardState {
       );
     }
     conversations.sort((a, b) {
-      final aTime =
-          a.lastEventAt ??
+      final aTime = a.lastEventAt ??
           a.seenAt ??
           a.completedAt ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final bTime =
-          b.lastEventAt ??
+      final bTime = b.lastEventAt ??
           b.seenAt ??
           b.completedAt ??
           DateTime.fromMillisecondsSinceEpoch(0);
@@ -730,6 +735,7 @@ class DashboardSettings {
     this.scanTimeoutMs = 1200,
     this.scanCidrs = const [],
     this.manualDevices = const [],
+    this.missingConversationGraceSeconds = 20,
     this.screenControlEnabled = true,
     this.screenIdleSeconds = 600,
     this.screenDisplay = ':0',
@@ -745,6 +751,7 @@ class DashboardSettings {
   final int scanTimeoutMs;
   final List<String> scanCidrs;
   final List<String> manualDevices;
+  final int missingConversationGraceSeconds;
   final bool screenControlEnabled;
   final int screenIdleSeconds;
   final String screenDisplay;
@@ -752,17 +759,18 @@ class DashboardSettings {
   final String? token;
 
   Map<String, Object?> toJson() => {
-    'pollIntervalMs': pollIntervalMs,
-    'staleAfterSeconds': staleAfterSeconds,
-    'offlineAfterSeconds': offlineAfterSeconds,
-    'scanEnabled': scanEnabled,
-    'scanIntervalSeconds': scanIntervalSeconds,
-    'scanTimeoutMs': scanTimeoutMs,
-    'scanCidrs': scanCidrs,
-    'screenControlEnabled': screenControlEnabled,
-    'screenIdleSeconds': screenIdleSeconds,
-    'tokenEnabled': token != null && token!.isNotEmpty,
-  };
+        'pollIntervalMs': pollIntervalMs,
+        'staleAfterSeconds': staleAfterSeconds,
+        'offlineAfterSeconds': offlineAfterSeconds,
+        'scanEnabled': scanEnabled,
+        'scanIntervalSeconds': scanIntervalSeconds,
+        'scanTimeoutMs': scanTimeoutMs,
+        'scanCidrs': scanCidrs,
+        'missingConversationGraceSeconds': missingConversationGraceSeconds,
+        'screenControlEnabled': screenControlEnabled,
+        'screenIdleSeconds': screenIdleSeconds,
+        'tokenEnabled': token != null && token!.isNotEmpty,
+      };
 
   factory DashboardSettings.fromEnvironment() {
     return DashboardSettings(
@@ -783,14 +791,20 @@ class DashboardSettings {
       ),
       scanCidrs: splitEnv('ZC_AGENTBEACON_SCAN_CIDRS'),
       manualDevices: splitEnv('ZC_AGENTBEACON_DEVICES'),
+      missingConversationGraceSeconds: max(
+        0,
+        int.tryParse(
+              env('ZC_AGENTBEACON_MISSING_CONVERSATION_GRACE_SECONDS') ?? '',
+            ) ??
+            20,
+      ),
       screenControlEnabled: envFlag('ZC_AGENTBEACON_SCREEN_CONTROL', true),
       screenIdleSeconds: max(
         10,
         int.tryParse(env('ZC_AGENTBEACON_SCREEN_IDLE_SECONDS') ?? '') ?? 600,
       ),
       screenDisplay: env('ZC_AGENTBEACON_SCREEN_DISPLAY') ?? ':0',
-      screenXauthority:
-          env('ZC_AGENTBEACON_SCREEN_XAUTHORITY') ??
+      screenXauthority: env('ZC_AGENTBEACON_SCREEN_XAUTHORITY') ??
           (Platform.environment['HOME'] == null
               ? '/home/pi/.Xauthority'
               : '${Platform.environment['HOME']}/.Xauthority'),
@@ -833,6 +847,13 @@ class DashboardSettings {
           ? (json['scanCidrs'] as List).map((item) => item.toString()).toList()
           : base.scanCidrs,
       manualDevices: base.manualDevices,
+      missingConversationGraceSeconds: max(
+        0,
+        int.tryParse(
+              json['missingConversationGraceSeconds']?.toString() ?? '',
+            ) ??
+            base.missingConversationGraceSeconds,
+      ),
       screenControlEnabled: json['screenControlEnabled'] is bool
           ? json['screenControlEnabled'] as bool
           : base.screenControlEnabled,

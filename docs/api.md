@@ -25,7 +25,7 @@ Returns raw Codex signals:
 }
 ```
 
-## Server
+## Hub
 
 ### `GET /api/conversations`
 

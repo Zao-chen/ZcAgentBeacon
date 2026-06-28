@@ -16,15 +16,15 @@ ZcAgentBeacon discovers Codex companion agents across your LAN and shows whether
 ZcAgentBeacon has three main parts:
 
 - **Companion:** Runs on each Windows / macOS / Linux device that uses Codex. It reads local `.codex` data and exposes raw signals.
-- **Server:** Runs on the dashboard host. It discovers devices, aggregates signals, and infers conversation status.
-- **Dashboard:** A Flutter Web interface that lists Codex conversation activity from every discovered device.
+- **Hub:** Runs on the dashboard host. It discovers devices, aggregates signals, and infers conversation status.
+- **Dashboard:** A Flutter Web interface served by the Hub that lists Codex conversation activity from every discovered device.
 
 ### ✨ Core Features
 
-* 🧭 **LAN discovery:** The server scans for companions and receives UDP announcements to reduce manual setup.
+* 🧭 **LAN discovery:** The Hub scans for companions and receives UDP announcements to reduce manual setup.
 * 🖥 **Smart dashboard:** Runs in any modern browser, with fullscreen, autostart, and compact small-screen layouts.
 * 🌙 **Automatic dark mode:** Follows the system theme; on supported Linux/X11 displays it can blank the screen after idle time and wake it on new activity.
-* 🧠 **Server-side state engine:** Companions only send raw signals. The server determines thinking, tool calls, completion, interruption, offline, and stale states.
+* 🧠 **Hub-side state engine:** Companions only send raw signals. The Hub determines thinking, tool calls, completion, interruption, offline, and stale states.
 * 🛠 **Tool-call visibility:** Shows the latest tool name, command, output summary, working directory, device name, and update time.
 * 🔔 **Completion notifications:** Pops a local notification when a conversation moves from running to completed.
 
@@ -32,23 +32,26 @@ ZcAgentBeacon has three main parts:
 
 ### Step 1: Install Companion On Codex Devices
 
-Download the package for your platform from [Releases](https://github.com/Zao-chen/ZcAgentBeacon/releases).
+Download the Companion package for each Codex device from [Releases](https://github.com/Zao-chen/ZcAgentBeacon/releases).
 
 Windows:
 
 ```powershell
+Expand-Archive .\ZcAgentBeaconCompanion-windows-x64.zip
 .\install-companion.ps1
 ```
 
 macOS:
 
 ```sh
+tar -xzf ZcAgentBeaconCompanion-macos-x64.tar.gz
 sh install-companion.sh
 ```
 
 Linux:
 
 ```sh
+tar -xzf ZcAgentBeaconCompanion-linux-x64.tar.gz
 sh install-companion.sh
 ```
 
@@ -58,16 +61,17 @@ After installation, the companion listens on:
 http://<device-ip>:42180/status
 ```
 
-### Step 2: Install Server And Dashboard
+### Step 2: Install Hub On The Dashboard Device
 
 ```sh
-sudo sh install-server.sh
+tar -xzf ZcAgentBeaconHub-linux-x64.tar.gz
+sudo sh install-hub.sh
 ```
 
 The dashboard is available at:
 
 ```text
-http://<server-ip>:42178
+http://<hub-ip>:42178
 ```
 
 For Raspberry Pi kiosk mode:
@@ -89,7 +93,7 @@ cd apps/dashboard && flutter test && flutter build web --release
 ```text
 packages/zc_agentbeacon_core   shared models, Codex adapter, status engine
 apps/companion                 local raw-signal companion
-apps/server                    aggregator server
+apps/server                    Hub implementation
 apps/dashboard                 Flutter Web dashboard
 installers/                    platform installers
 docs/                          documentation

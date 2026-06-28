@@ -18,10 +18,13 @@ jobs:
           cache: true
       - name: Resolve workspace
         run: dart pub get
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
       - name: Format check
         run: dart format --output=none --set-exit-if-changed packages apps
       - name: Analyze
-        run: dart analyze
+        run: flutter analyze
       - name: Core tests
         working-directory: packages/zc_agentbeacon_core
         run: dart test

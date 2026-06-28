@@ -76,9 +76,14 @@ jobs:
           cp dist/linux/zc-agentbeacon-companion deb/usr/bin/
           cp dist/linux/zc-agentbeacon-server deb/usr/bin/
           cp -R apps/dashboard/build/web/. deb/usr/share/zc-agentbeacon/dashboard/
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            PACKAGE_VERSION="${GITHUB_REF_NAME#v}"
+          else
+            PACKAGE_VERSION="0.0.0+${GITHUB_RUN_NUMBER:-0}"
+          fi
           cat > deb/DEBIAN/control <<EOF
           Package: zc-agentbeacon
-          Version: ${GITHUB_REF_NAME#v}
+          Version: ${PACKAGE_VERSION}
           Section: utils
           Priority: optional
           Architecture: amd64
@@ -94,31 +99,6 @@ jobs:
             dist/ZcAgentBeacon-linux-x64.deb
 
   raspberry-pi:
-    runs-on: ubuntu-24.04-arm
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-      - run: dart pub get
-      - name: Build Raspberry Pi arm64 package
-        run: |
-          set -eux
-          mkdir -p dist/pi/dashboard
-          (cd apps/dashboard && flutter build web --release)
-          dart compile exe apps/server/bin/zc_agentbeacon_server.dart -o dist/pi/zc-agentbeacon-server
-          cp -R apps/dashboard/build/web/. dist/pi/dashboard/
-          cp installers/raspberry-pi/* dist/pi/
-          chmod +x dist/pi/*
-          tar -czf dist/ZcAgentBeacon-RaspberryPi-arm64.tar.gz -C dist/pi .
-      - uses: actions/upload-artifact@v4
-        with:
-          name: raspberry-pi
-          path: dist/ZcAgentBeacon-RaspberryPi-arm64.tar.gz
-
-  raspberry-pi-source:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -137,11 +117,11 @@ jobs:
           tar -czf dist/ZcAgentBeacon-RaspberryPi-source.tar.gz -C dist/pi-source .
       - uses: actions/upload-artifact@v4
         with:
-          name: raspberry-pi-source
+          name: raspberry-pi
           path: dist/ZcAgentBeacon-RaspberryPi-source.tar.gz
 
   publish:
-    needs: [windows, macos, linux, raspberry-pi, raspberry-pi-source]
+    needs: [windows, macos, linux, raspberry-pi]
     if: always()
     runs-on: ubuntu-latest
     permissions:

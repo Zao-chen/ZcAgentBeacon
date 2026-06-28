@@ -1,5 +1,7 @@
 * text=auto
 
+.gitattributes text eol=lf
+
 *.dart text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf

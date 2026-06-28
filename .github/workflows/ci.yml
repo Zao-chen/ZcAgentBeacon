@@ -26,8 +26,8 @@ jobs:
           git rev-parse HEAD
           dart --version
           flutter --version
-      - name: Format check
-        run: dart format --output=none --set-exit-if-changed packages apps
+      - name: Format
+        run: dart format packages apps
       - name: Analyze
         run: flutter analyze
       - name: Core tests

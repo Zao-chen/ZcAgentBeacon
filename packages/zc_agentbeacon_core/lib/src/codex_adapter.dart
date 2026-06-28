@@ -111,6 +111,7 @@ class CodexAdapter {
         conversationId: thread.id,
         title: thread.title,
         cwd: thread.cwd,
+        agentRuntime: AgentRuntime.codex,
         updatedAt: thread.updatedAtMs == 0
             ? null
             : DateTime.fromMillisecondsSinceEpoch(
@@ -130,12 +131,14 @@ class CodexAdapter {
             conversationId: process.conversationId,
             title: process.chatTitle ?? thread?.title ?? process.conversationId,
             cwd: process.cwd.isNotEmpty ? process.cwd : thread?.cwd ?? '',
+            agentRuntime: AgentRuntime.codex,
             updatedAt: process.updatedAt,
           );
       raw[process.conversationId] = RawConversation(
         conversationId: conversation.conversationId,
         title: conversation.title,
         cwd: conversation.cwd,
+        agentRuntime: AgentRuntime.codex,
         updatedAt: conversation.updatedAt,
         events: conversation.events,
         processes: [

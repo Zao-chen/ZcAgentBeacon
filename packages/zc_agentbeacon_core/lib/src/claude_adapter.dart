@@ -124,6 +124,7 @@ class ClaudeAdapter {
       conversationId: 'claude:$sessionId',
       title: truncate(title, 180),
       cwd: cwd,
+      agentRuntime: AgentRuntime.claudeCode,
       updatedAt: updatedAt,
       events: events,
       detailLevel: 'claude_signals',

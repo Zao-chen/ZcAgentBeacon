@@ -10,6 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_svg: ^2.0.17
   http: ^1.2.2
   web_socket_channel: ^3.0.1
   zc_agentbeacon_core:
@@ -23,3 +24,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/brand/codex.png
+    - assets/brand/claude-code.svg

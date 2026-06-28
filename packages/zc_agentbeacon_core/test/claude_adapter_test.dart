@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 import 'package:zc_agentbeacon_core/codex_adapter.dart' show ClaudeAdapter;
 import 'package:zc_agentbeacon_core/zc_agentbeacon_core.dart'
-    show ConversationStatus, ZcStatusEngine;
+    show AgentRuntime, ConversationStatus, ZcStatusEngine;
 
 void main() {
   test('parses Claude Code transcript into raw signals', () async {
@@ -100,6 +100,7 @@ void main() {
     expect(raw!.conversationId, 'claude:session-1');
     expect(raw.title, '文件检查');
     expect(raw.cwd, '/work/project');
+    expect(raw.agentRuntime, AgentRuntime.claudeCode);
     expect(raw.events.map((item) => item.kind), contains('tool_call'));
     expect(raw.events.map((item) => item.kind), contains('tool_output'));
     expect(raw.events.last.kind, 'turn_end');

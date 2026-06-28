@@ -11,6 +11,28 @@ enum ConversationStatus {
   errorOffline,
 }
 
+enum AgentRuntime {
+  unknown,
+  codex,
+  claudeCode,
+}
+
+extension AgentRuntimeWire on AgentRuntime {
+  String get wireName => switch (this) {
+        AgentRuntime.codex => 'codex',
+        AgentRuntime.claudeCode => 'claude_code',
+        AgentRuntime.unknown => 'unknown',
+      };
+}
+
+AgentRuntime agentRuntimeFromWire(Object? value) {
+  return switch (value?.toString()) {
+    'codex' => AgentRuntime.codex,
+    'claude_code' || 'claude' || 'claudecode' => AgentRuntime.claudeCode,
+    _ => AgentRuntime.unknown,
+  };
+}
+
 extension ConversationStatusWire on ConversationStatus {
   String get wireName => switch (this) {
         ConversationStatus.thinking => 'thinking',
@@ -144,6 +166,7 @@ class RawConversation {
     required this.conversationId,
     required this.title,
     required this.cwd,
+    this.agentRuntime = AgentRuntime.unknown,
     this.updatedAt,
     this.events = const [],
     this.processes = const [],
@@ -153,6 +176,7 @@ class RawConversation {
   final String conversationId;
   final String title;
   final String cwd;
+  final AgentRuntime agentRuntime;
   final DateTime? updatedAt;
   final List<RawEventSignal> events;
   final List<RawProcessSignal> processes;
@@ -162,6 +186,7 @@ class RawConversation {
         'conversationId': conversationId,
         'title': title,
         'cwd': cwd,
+        'agentRuntime': agentRuntime.wireName,
         'updatedAt': updatedAt?.toUtc().toIso8601String(),
         'events': events.map((item) => item.toJson()).toList(),
         'processes': processes.map((item) => item.toJson()).toList(),
@@ -169,10 +194,17 @@ class RawConversation {
       };
 
   factory RawConversation.fromJson(Map<String, Object?> json) {
+    final runtime = agentRuntimeFromWire(json['agentRuntime']);
     return RawConversation(
       conversationId: string(json['conversationId']),
       title: string(json['title']),
       cwd: string(json['cwd']),
+      agentRuntime: runtime == AgentRuntime.unknown
+          ? agentRuntimeFromRawHint(
+              json['conversationId'],
+              json['detailLevel'],
+            )
+          : runtime,
       updatedAt: date(json['updatedAt']),
       events: list(json['events'])
           .whereType<Map>()
@@ -187,6 +219,15 @@ class RawConversation {
       detailLevel: string(json['detailLevel'], fallback: 'signals'),
     );
   }
+}
+
+AgentRuntime agentRuntimeFromRawHint(Object? conversationId, Object? detail) {
+  final id = (conversationId ?? '').toString().toLowerCase();
+  final detailLevel = (detail ?? '').toString().toLowerCase();
+  if (id.startsWith('claude:') || detailLevel.contains('claude')) {
+    return AgentRuntime.claudeCode;
+  }
+  return AgentRuntime.unknown;
 }
 
 class AgentSnapshot {
@@ -245,6 +286,7 @@ class ConversationView {
     required this.title,
     required this.cwd,
     required this.status,
+    this.agentRuntime = AgentRuntime.unknown,
     this.turnId,
     this.lastEventAt,
     this.completedAt,
@@ -269,6 +311,7 @@ class ConversationView {
   final String title;
   final String cwd;
   final ConversationStatus status;
+  final AgentRuntime agentRuntime;
   final String? turnId;
   final DateTime? lastEventAt;
   final DateTime? completedAt;
@@ -290,6 +333,7 @@ class ConversationView {
 
   ConversationView copyWith({
     ConversationStatus? status,
+    AgentRuntime? agentRuntime,
     String? turnId,
     DateTime? lastEventAt,
     DateTime? completedAt,
@@ -311,6 +355,7 @@ class ConversationView {
       title: title,
       cwd: cwd,
       status: status ?? this.status,
+      agentRuntime: agentRuntime ?? this.agentRuntime,
       turnId: turnId ?? this.turnId,
       lastEventAt: lastEventAt ?? this.lastEventAt,
       completedAt: completedAt ?? this.completedAt,
@@ -337,6 +382,7 @@ class ConversationView {
         'title': title,
         'cwd': cwd,
         'status': status.wireName,
+        'agentRuntime': agentRuntime.wireName,
         'turnId': turnId,
         'lastEventAt': lastEventAt?.toUtc().toIso8601String(),
         'completedAt': completedAt?.toUtc().toIso8601String(),
@@ -363,6 +409,7 @@ class ConversationView {
       title: string(json['title'], fallback: '未命名会话'),
       cwd: string(json['cwd']),
       status: conversationStatusFromWire(json['status']),
+      agentRuntime: agentRuntimeFromWire(json['agentRuntime']),
       turnId: nullableString(json['turnId']),
       lastEventAt: date(json['lastEventAt']),
       completedAt: date(json['completedAt']),

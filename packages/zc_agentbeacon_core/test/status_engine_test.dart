@@ -11,6 +11,7 @@ void main() {
         conversationId: 'conv-1',
         title: '会话',
         cwd: '/tmp/project',
+        agentRuntime: AgentRuntime.codex,
         updatedAt: now,
         events: [
           RawEventSignal(
@@ -24,6 +25,20 @@ void main() {
     ], now: now);
 
     expect(items.single.status, ConversationStatus.thinking);
+    expect(items.single.agentRuntime, AgentRuntime.codex);
+  });
+
+  test('infers Claude Code runtime from legacy raw payload hints', () {
+    final raw = RawConversation.fromJson({
+      'conversationId': 'claude:session-1',
+      'title': 'Claude 会话',
+      'cwd': '/tmp/project',
+      'detailLevel': 'claude_signals',
+      'events': const [],
+      'processes': const [],
+    });
+
+    expect(raw.agentRuntime, AgentRuntime.claudeCode);
   });
 
   test('task completion becomes idle and uses final message', () {

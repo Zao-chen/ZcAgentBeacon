@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:zc_agentbeacon_core/zc_agentbeacon_core.dart';
@@ -372,6 +373,10 @@ class ConversationRow extends StatelessWidget {
                               conversation.deviceHost ??
                               '未知设备',
                         ),
+                        if (runtimeSpec(conversation.agentRuntime) != null) ...[
+                          const SizedBox(width: 5),
+                          AgentRuntimeChip(runtime: conversation.agentRuntime),
+                        ],
                         const SizedBox(width: 7),
                         Expanded(
                           child: Text(
@@ -524,6 +529,71 @@ class _MotionDotState extends State<MotionDot>
   }
 }
 
+class AgentRuntimeChip extends StatelessWidget {
+  const AgentRuntimeChip({required this.runtime, super.key});
+
+  final AgentRuntime runtime;
+
+  @override
+  Widget build(BuildContext context) {
+    final spec = runtimeSpec(runtime);
+    if (spec == null) {
+      return const SizedBox.shrink();
+    }
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 98),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        border: Border.all(color: colors.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          RuntimeIcon(spec: spec),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              spec.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class RuntimeIcon extends StatelessWidget {
+  const RuntimeIcon({required this.spec, super.key});
+
+  final RuntimeSpec spec;
+
+  @override
+  Widget build(BuildContext context) {
+    if (spec.svg) {
+      return SvgPicture.asset(
+        spec.asset,
+        width: 14,
+        height: 14,
+      );
+    }
+    return Image.asset(
+      spec.asset,
+      width: 14,
+      height: 14,
+      filterQuality: FilterQuality.medium,
+    );
+  }
+}
+
 class DeviceChip extends StatelessWidget {
   const DeviceChip({required this.name, super.key});
 
@@ -551,6 +621,33 @@ class DeviceChip extends StatelessWidget {
       ),
     );
   }
+}
+
+RuntimeSpec? runtimeSpec(AgentRuntime runtime) {
+  return switch (runtime) {
+    AgentRuntime.codex => const RuntimeSpec(
+        label: 'Codex',
+        asset: 'assets/brand/codex.png',
+      ),
+    AgentRuntime.claudeCode => const RuntimeSpec(
+        label: 'Claude Code',
+        asset: 'assets/brand/claude-code.svg',
+        svg: true,
+      ),
+    AgentRuntime.unknown => null,
+  };
+}
+
+class RuntimeSpec {
+  const RuntimeSpec({
+    required this.label,
+    required this.asset,
+    this.svg = false,
+  });
+
+  final String label;
+  final String asset;
+  final bool svg;
 }
 
 class EmptyState extends StatelessWidget {

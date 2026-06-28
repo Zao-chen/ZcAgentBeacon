@@ -115,6 +115,7 @@ class ZcStatusEngine {
       title: preferredTitle(raw.title, raw.conversationId, raw.cwd),
       cwd: raw.cwd,
       status: status,
+      agentRuntime: raw.agentRuntime,
       turnId: activity.turnId,
       lastEventAt: eventAt,
       completedAt: status == ConversationStatus.idle ||

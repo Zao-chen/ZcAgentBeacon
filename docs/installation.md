@@ -42,6 +42,18 @@ sh install-companion.sh
 
 Install Hub on the device that serves the dashboard.
 
+One-line latest release install:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Zao-chen/ZcAgentBeacon/main/scripts/install-hub-latest.sh | sudo sh
+```
+
+Custom port:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Zao-chen/ZcAgentBeacon/main/scripts/install-hub-latest.sh | sudo env ZC_AGENTBEACON_HUB_PORT=42179 sh
+```
+
 Linux x64:
 
 ```sh
@@ -57,6 +69,14 @@ sudo systemctl enable --now zc-agentbeacon
 ```
 
 Raspberry Pi:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Zao-chen/ZcAgentBeacon/main/scripts/install-hub-latest.sh | sudo env ZC_AGENTBEACON_INSTALL_KIOSK=1 sh
+```
+
+The Raspberry Pi release is currently a source fallback package, so Dart and Flutter must already be available on the Pi.
+
+Manual Raspberry Pi source package install:
 
 ```sh
 tar -xzf ZcAgentBeaconHub-raspberry-pi-source.tar.gz

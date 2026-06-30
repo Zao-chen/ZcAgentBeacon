@@ -63,6 +63,14 @@ http://<device-ip>:42180/status
 
 ### Step 2: Install Hub On The Dashboard Device
 
+One-line install for the latest release:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Zao-chen/ZcAgentBeacon/main/scripts/install-hub-latest.sh | sudo sh
+```
+
+Manual install:
+
 ```sh
 tar -xzf ZcAgentBeaconHub-linux-x64.tar.gz
 sudo sh install-hub.sh
@@ -74,10 +82,16 @@ The dashboard is available at:
 http://<hub-ip>:42178
 ```
 
+Custom port:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Zao-chen/ZcAgentBeacon/main/scripts/install-hub-latest.sh | sudo env ZC_AGENTBEACON_HUB_PORT=42179 sh
+```
+
 For Raspberry Pi kiosk mode:
 
 ```sh
-sudo sh install-kiosk.sh
+curl -fsSL https://raw.githubusercontent.com/Zao-chen/ZcAgentBeacon/main/scripts/install-hub-latest.sh | sudo env ZC_AGENTBEACON_INSTALL_KIOSK=1 sh
 ```
 
 ## 🧑‍💻 Development

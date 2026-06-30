@@ -63,6 +63,14 @@ http://<device-ip>:42180/status
 
 ### Step2: 在仪表盘设备安装 Hub
 
+一键安装最新版：
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Zao-chen/ZcAgentBeacon/main/scripts/install-hub-latest.sh | sudo sh
+```
+
+手动安装：
+
 ```sh
 tar -xzf ZcAgentBeaconHub-linux-x64.tar.gz
 sudo sh install-hub.sh
@@ -72,6 +80,12 @@ sudo sh install-hub.sh
 
 ```text
 http://<hub-ip>:42178
+```
+
+自定义端口：
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Zao-chen/ZcAgentBeacon/main/scripts/install-hub-latest.sh | sudo env ZC_AGENTBEACON_HUB_PORT=42179 sh
 ```
 
 ## 🤗 如何贡献
